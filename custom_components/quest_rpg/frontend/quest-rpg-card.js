@@ -484,15 +484,32 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
   }
 }
 
-customElements.define("quest-rpg-quests-card", QuestRpgQuestsCard);
-customElements.define("quest-rpg-shop-card", QuestRpgShopCard);
-customElements.define("quest-rpg-vouchers-card", QuestRpgVouchersCard);
-customElements.define("quest-rpg-wheel-card", QuestRpgWheelCard);
+const QUEST_RPG_CARDS = [
+  ["quest-rpg-quests-card", QuestRpgQuestsCard, "Quest RPG - Quests", "Active quests with reward and deadline."],
+  ["quest-rpg-shop-card", QuestRpgShopCard, "Quest RPG - Shop", "Reward shop."],
+  ["quest-rpg-vouchers-card", QuestRpgVouchersCard, "Quest RPG - Vouchers", "Purchased, not-yet-redeemed vouchers."],
+  ["quest-rpg-wheel-card", QuestRpgWheelCard, "Quest RPG - Wheel of Fortune", "Daily wheel of fortune."],
+];
 
 window.customCards = window.customCards || [];
-window.customCards.push(
-  { type: "quest-rpg-quests-card", name: "Quest RPG - Quests", description: "Active quests with reward and deadline." },
-  { type: "quest-rpg-shop-card", name: "Quest RPG - Shop", description: "Reward shop." },
-  { type: "quest-rpg-vouchers-card", name: "Quest RPG - Vouchers", description: "Purchased, not-yet-redeemed vouchers." },
-  { type: "quest-rpg-wheel-card", name: "Quest RPG - Wheel of Fortune", description: "Daily wheel of fortune." }
-);
+
+for (const [tag, cls, name, description] of QUEST_RPG_CARDS) {
+  try {
+    if (window.customElements.get(tag)) {
+      console.warn(`[quest-rpg] ${tag} was already registered (script loaded twice?) - skipping re-define.`);
+    } else {
+      window.customElements.define(tag, cls);
+      console.info(`[quest-rpg] registered ${tag}`);
+    }
+    window.customCards.push({ type: tag, name, description });
+  } catch (err) {
+    console.error(`[quest-rpg] FAILED to register ${tag}:`, err);
+  }
+}
+
+// Sanity check: prove to ourselves (and the console) whether the tags are
+// actually resolvable via the registry Home Assistant itself will query.
+for (const [tag] of QUEST_RPG_CARDS) {
+  const resolved = window.customElements.get(tag);
+  console.info(`[quest-rpg] post-registration check - customElements.get('${tag}') ->`, resolved);
+}
