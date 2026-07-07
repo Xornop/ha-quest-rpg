@@ -2,8 +2,7 @@
 
 Turn household chores into an RPG-style quest board: a gold economy, a
 reward shop, a fortune wheel, and voucher redemption - all backed by a
-proper Home Assistant integration instead of a pile of helpers and Jinja
-templates.
+proper Home Assistant integration.
 
 Originally built as a single-user Lovelace dashboard; rebuilt here as a
 reusable **custom integration + companion Lovelace card**, so it can be
@@ -17,11 +16,12 @@ helpers, no manual template sensors, no hardcoded names.
 - **AI-generated quests**, via Home Assistant's own [AI Task](https://www.home-assistant.io/integrations/ai_task/)
   integration (introduced in HA 2025.7) - works with whatever AI Task entity
   you've already got configured (Google Generative AI, OpenAI, Anthropic,
-  Ollama, OpenRouter, ...). Quest RPG doesn't talk to any AI provider
-  directly and doesn't need its own API key.
+  Ollama, OpenRouter, ...).
 - **A fortune wheel** with a configurable cost, prize table, and a daily
-  *time window* during which it's spinnable (mirroring the original design:
-  e.g. only playable between 18:30-19:30).
+  *time window* during which it's spinnable. This is done so players will 
+  think about their quests at least once a day during this window.
+  It also has a max amount of spins per day, so players can't keep spinning
+  the wheel, since the odds are in the players favor.
 - **A reward shop** with stock tracking, and a **voucher system** so
   purchases can be redeemed later (or sold back for half value if it was an
   impulse buy).
@@ -32,10 +32,7 @@ helpers, no manual template sensors, no hardcoded names.
 
 - Home Assistant **2025.7** or newer (for the AI Task integration).
 - Some AI Task-capable integration configured (Google Generative AI, OpenAI,
-  Anthropic Conversation, Ollama, OpenRouter, etc.) if you want quests to be
-  auto-generated. Without one, you can still add quests manually via the
-  `quest_rpg.add_task` service with a plain description - it'll just skip
-  the AI flavour text and use a flat default reward.
+  Anthropic Conversation, Ollama, OpenRouter, etc.)
 
 ## Installation
 
@@ -58,7 +55,7 @@ When you add the integration you'll be asked for:
 
 | Field | Description |
 |---|---|
-| Player name | Anything - this becomes the device/entity names, e.g. "quest_rpg_johnny" |
+| Player name | Anything - this becomes the device/entity names, e.g. "johnny" |
 | AI Task entity | Optional. Leave blank to use your HA-wide default AI Task entity. |
 | Quest language | The language quest text should be generated in (default: English) |
 | Wheel spin cost | Gold cost per spin (default: 10) |
@@ -126,20 +123,6 @@ directly from your own automations/scripts):
 - `quest_rpg.redeem_voucher` - `config_entry_id`, `voucher_text` (full redeem)
 - `quest_rpg.add_gold` - `config_entry_id`, `amount` (can be negative)
 
-## Notes on the redesign
-
-Compared to the original single-file Lovelace dashboard:
-
-- Every `input_number`/`todo.*_user2` helper is now created and owned by the
-  integration itself - nothing to set up by hand, nothing named after one
-  specific person.
-- Quest deadlines use the `todo` platform's native `due` field instead of
-  being encoded into the text.
-- Gold rewards and shop price/stock still live in the item text (e.g.
-  `(₡15)`, `(3)`) - kept human-editable, and it's the one convention the
-  original design got right.
-- The wheel's "3 spins between 18:30 and 19:30" behaviour is preserved
-  exactly, just made configurable instead of hardcoded in an automation.
 
 ## License
 
