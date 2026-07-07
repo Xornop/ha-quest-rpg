@@ -1,0 +1,118 @@
+add_task:
+  name: Add task
+  description: >-
+    Turns a plain task description into an RPG quest (via Home Assistant's
+    AI Task integration) and adds it to the player's quest list. This is
+    what the "New task" text field does automatically - use this service if
+    you want to add tasks from an automation or script instead.
+  fields:
+    config_entry_id:
+      name: Player
+      description: The Quest RPG config entry (player) to add the task for.
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    task_text:
+      name: Task text
+      description: Plain description of the task, e.g. "empty the dishwasher".
+      required: true
+      selector:
+        text:
+
+complete_quest:
+  name: Complete quest
+  description: Marks a quest as done, pays out its gold reward, and removes it.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    quest_text:
+      name: Quest text
+      description: The exact quest text as shown on the quest sensor.
+      required: true
+      selector:
+        text:
+
+spin_wheel:
+  name: Spin the fortune wheel
+  description: Spends gold on a wheel spin and pays out whatever it lands on.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+
+buy_item:
+  name: Buy shop item
+  description: Buys an item from the reward shop and creates a voucher.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    item_text:
+      name: Item text
+      description: The exact shop item text as shown on the shop sensor.
+      required: true
+      selector:
+        text:
+
+sell_voucher:
+  name: Sell voucher back
+  description: Returns a purchased voucher for half its gold value.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    voucher_text:
+      name: Voucher text
+      required: true
+      selector:
+        text:
+
+redeem_voucher:
+  name: Redeem voucher
+  description: Cashes in a voucher in full (the reward has been handed over).
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    voucher_text:
+      name: Voucher text
+      required: true
+      selector:
+        text:
+
+add_gold:
+  name: Add (or remove) gold
+  description: Manually adjusts a player's gold balance, e.g. from an automation.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    amount:
+      name: Amount
+      description: Positive to add gold, negative to remove it.
+      required: true
+      selector:
+        number:
+          min: -999999
+          max: 999999
+          mode: box

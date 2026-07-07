@@ -1,0 +1,12 @@
+{
+  "domain": "quest_rpg",
+  "name": "Quest RPG",
+  "codeowners": ["@Xornop"],
+  "config_flow": true,
+  "documentation": "https://github.com/Xornop/ha-quest-rpg",
+  "issue_tracker": "https://github.com/Xornop/ha-quest-rpg/issues",
+  "integration_type": "hub",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "0.1.0"
+}
