@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a Quest RPG player",
+        "description": "Every player gets their own gold, quests, shop and vouchers. Add the integration again to set up another player.",
+        "data": {
+          "player_name": "Player name",
+          "ai_task_entity_id": "AI Task entity (optional - leave blank to use your Home Assistant default)",
+          "quest_language": "Language for generated quest text",
+          "wheel_cost": "Wheel spin cost (gold)",
+          "wheel_max_spins": "Max wheel spins per day",
+          "wheel_window_start": "Wheel available from",
+          "wheel_window_end": "Wheel available until"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "A player with this name is already configured."
+    },
+    "error": {
+      "invalid_name": "Please enter a valid player name."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Quest RPG settings",
+        "data": {
+          "ai_task_entity_id": "AI Task entity (optional - leave blank to use your Home Assistant default)",
+          "quest_language": "Language for generated quest text",
+          "wheel_cost": "Wheel spin cost (gold)",
+          "wheel_max_spins": "Max wheel spins per day",
+          "wheel_window_start": "Wheel available from",
+          "wheel_window_end": "Wheel available until"
+        }
+      }
+    }
+  }
+}
