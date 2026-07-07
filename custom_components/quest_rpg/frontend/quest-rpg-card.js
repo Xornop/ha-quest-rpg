@@ -72,17 +72,58 @@ class QuestRpgBaseCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this._lastSig = null;
   }
 
   setConfig(config) {
     if (!config) throw new Error("Invalid configuration");
     this._config = config;
-    this._render();
+    this._forceRender();
   }
 
   set hass(hass) {
     this._hass = hass;
+    const sig = this._signature();
+    if (sig === this._lastSig) return; // nothing we care about changed - don't touch the DOM
+    this._lastSig = sig;
+    this._forceRender();
+  }
+
+  /** Subclasses can override to include extra fields (e.g. due timers). */
+  _signature() {
+    const ids = Object.keys(this._config || {}).filter((k) => k.endsWith("_entity"));
+    return JSON.stringify(
+      ids.map((k) => {
+        const e = this._entity(k);
+        return e ? [e.entity_id, e.state, e.attributes] : null;
+      })
+    );
+  }
+
+  /** Re-render while preserving focus/value of any <input> the user is using. */
+  _forceRender() {
+    const root = this.shadowRoot;
+    const active = root.activeElement;
+    const isInput = active && active.tagName === "INPUT";
+    const savedId = isInput ? active.id : null;
+    const savedValue = isInput ? active.value : null;
+    const savedSelectionStart = isInput ? active.selectionStart : null;
+    const savedSelectionEnd = isInput ? active.selectionEnd : null;
+
     this._render();
+
+    if (savedId) {
+      const restored = root.getElementById(savedId);
+      if (restored) {
+        restored.value = savedValue;
+        restored.focus();
+        try {
+          restored.setSelectionRange(savedSelectionStart, savedSelectionEnd);
+        } catch (_e) {
+          // ignore - not all input types support selection ranges
+        }
+      }
+    }
   }
 
   getCardSize() {
@@ -358,7 +399,10 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     const firstRun = !this._hass;
     this._hass = hass;
     if (firstRun) this._subscribe();
-    this._render();
+    const sig = this._signature();
+    if (sig === this._lastSig) return;
+    this._lastSig = sig;
+    this._forceRender();
   }
 
   async _subscribe() {
