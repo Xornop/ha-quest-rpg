@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Quest RPG-speler toevoegen",
+        "description": "Elke speler krijgt eigen goud, quests, winkel en vouchers. Voeg de integratie nogmaals toe om een tweede speler in te stellen.",
+        "data": {
+          "player_name": "Naam van de speler",
+          "ai_task_entity_id": "AI Task-entiteit (optioneel - leeg laten voor de standaard van Home Assistant)",
+          "quest_language": "Taal voor gegenereerde quest-tekst",
+          "wheel_cost": "Kosten rad van fortuin (goud)",
+          "wheel_max_spins": "Max. aantal draaien per dag",
+          "wheel_window_start": "Rad beschikbaar vanaf",
+          "wheel_window_end": "Rad beschikbaar tot"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Er bestaat al een speler met deze naam."
+    },
+    "error": {
+      "invalid_name": "Voer een geldige spelernaam in."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Quest RPG-instellingen",
+        "data": {
+          "ai_task_entity_id": "AI Task-entiteit (optioneel - leeg laten voor de standaard van Home Assistant)",
+          "quest_language": "Taal voor gegenereerde quest-tekst",
+          "wheel_cost": "Kosten rad van fortuin (goud)",
+          "wheel_max_spins": "Max. aantal draaien per dag",
+          "wheel_window_start": "Rad beschikbaar vanaf",
+          "wheel_window_end": "Rad beschikbaar tot"
+        }
+      }
+    }
+  }
+}
