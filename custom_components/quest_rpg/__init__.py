@@ -81,7 +81,13 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
             )
         ]
     )
-    add_extra_js_url(hass, f"{FRONTEND_URL}?v=1")
+
+    # Cache-bust automatically using the file's mtime, so the browser (and
+    # HA's service worker) always fetches a fresh copy after any update -
+    # no manual version bump to remember.
+    card_file = frontend_path / "quest-rpg-card.js"
+    version = int(card_file.stat().st_mtime) if card_file.exists() else 0
+    add_extra_js_url(hass, f"{FRONTEND_URL}?v={version}")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
