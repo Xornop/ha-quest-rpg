@@ -58,7 +58,7 @@ When you add the integration you'll be asked for:
 
 | Field | Description |
 |---|---|
-| Player name | Anything - this becomes the device/entity names, e.g. "Liselotte" |
+| Player name | Anything - this becomes the device/entity names, e.g. "quest_rpg_johnny" |
 | AI Task entity | Optional. Leave blank to use your HA-wide default AI Task entity. |
 | Quest language | The language quest text should be generated in (default: English) |
 | Wheel spin cost | Gold cost per spin (default: 10) |
@@ -72,16 +72,16 @@ All of this can be changed later via the integration's **Configure** button.
 
 ### Entities created per player
 
-- `number.<player>_gold`
-- `number.<player>_wheel_spins_today`
-- `text.<player>_new_task` - type a plain task in here (or use the card's
+- `number.quest_rpg_<player>_gold`
+- `number.quest_rpg_<player>_wheel_spins_today`
+- `text.quest_rpg_<player>_new_task` - type a plain task in here (or use the card's
   built-in input box) and it gets turned into a quest automatically
-- `todo.<player>_quests`
-- `todo.<player>_shop_items` - add items yourself as
+- `todo.quest_rpg_<player>_quests`
+- `todo.quest_rpg_<player>_shop_items` - add items yourself as
   `Name (₡price) (stock)`, e.g. `🍦 Ice cream trip (₡40) (2)`; use `(∞)`
   or omit the stock group entirely for unlimited stock
-- `todo.<player>_vouchers`
-- `sensor.<player>_quests_attributes` / `..._shop_items_attributes` /
+- `todo.quest_rpg_<player>_vouchers`
+- `sensor.quest_rpg_<player>_quests_attributes` / `..._shop_items_attributes` /
   `..._vouchers_attributes` - what the cards actually read from
 
 ## Dashboard cards
@@ -91,20 +91,20 @@ HACS frontend resource step needed. Add cards like this to any dashboard:
 
 ```yaml
 type: custom:quest-rpg-quests-card
-gold_entity: number.liselotte_gold
-quests_entity: sensor.liselotte_quests_attributes
-new_task_entity: text.liselotte_new_task   # optional, adds an input box
+gold_entity: number.quest_rpg_johnny_gold
+quests_entity: sensor.quest_rpg_johnny_quests
+new_task_entity: text.quest_rpg_johnny_new_task   # optional, adds an input box
 
 type: custom:quest-rpg-shop-card
-gold_entity: number.liselotte_gold
-shop_entity: sensor.liselotte_shop_items_attributes
+gold_entity: number.quest_rpg_johnny_gold
+shop_entity: sensor.quest_rpg_johnny_shop_items
 
 type: custom:quest-rpg-vouchers-card
-vouchers_entity: sensor.liselotte_vouchers_attributes
+vouchers_entity: sensor.quest_rpg_johnny_vouchers
 
 type: custom:quest-rpg-wheel-card
-gold_entity: number.liselotte_gold
-spins_entity: number.liselotte_wheel_spins_today
+gold_entity: number.quest_rpg_johnny_gold
+spins_entity: number.quest_rpg_johnny_wheel_spins_today
 cost: 10            # keep in sync with your configured wheel cost
 max_spins: 3         # keep in sync with your configured max spins
 prizes: [0, 5, 10, 15, 20, 30]
