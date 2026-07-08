@@ -96,6 +96,10 @@ type: custom:quest-rpg-shop-card
 gold_entity: number.quest_rpg_johnny_gold
 shop_entity: sensor.quest_rpg_johnny_shop_items
 
+type: custom:quest-rpg-shop-admin-card
+shop_entity: sensor.quest_rpg_johnny_shop_items   # used to resolve which player
+# a small form (emoji / name / price / stock) that calls quest_rpg.add_shop_item
+
 type: custom:quest-rpg-vouchers-card
 vouchers_entity: sensor.quest_rpg_johnny_vouchers
 
