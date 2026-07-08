@@ -1,3 +1,5 @@
+![Quest RPG Logo](custom_components/quest_rpg/brand/logo.png)
+
 # Quest RPG for Home Assistant
 
 Turn household chores into an RPG-style quest board: a gold economy, a
