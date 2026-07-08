@@ -300,6 +300,11 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
 // Shop card
 // ---------------------------------------------------------------------
 class QuestRpgShopCard extends QuestRpgBaseCard {
+  constructor() {
+    super();
+    this._buyLocks = new Set();
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     const shopEntity = this._entity("shop_entity");
@@ -313,7 +318,16 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
       const stock = stockOf(item);
       const outofstock = stock !== null && stock <= 0;
       const cantafford = gold < prijs;
-      return { item, prijs, stock, outofstock, cantafford, disabled: outofstock || cantafford };
+      const locked = this._buyLocks.has(item);
+      return {
+        item,
+        prijs,
+        stock,
+        outofstock,
+        cantafford,
+        locked,
+        disabled: outofstock || cantafford || locked,
+      };
     });
     enriched.sort((a, b) => {
       const rank = (e) => (e.outofstock ? 2 : e.cantafford ? 1 : 0);
@@ -335,6 +349,11 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
               : e.stock === null
               ? `<span class="qr-b">∞</span>`
               : `<span class="qr-b">${e.stock} available</span>`;
+            const buyBadge = e.locked
+              ? `<span class="qr-b qr-buy-badge">⏳ Buying...</span>`
+              : !e.disabled
+              ? `<span class="qr-b qr-buy-badge">🛒 Buy</span>`
+              : "";
             return `
               <div class="qr-item ${e.disabled ? "disabled" : ""}" data-idx="${i}">
                 <div class="qr-n">${firstWord(naam)}</div>
@@ -342,7 +361,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
                   <div class="qr-t">${restWords(naam)}</div>
                   <div class="qr-s">🪙 ${e.prijs} ₡ ${stockLabel}</div>
                 </div>
-                ${!e.disabled ? `<span class="qr-b">🛒 Buy</span>` : ""}
+                ${buyBadge}
               </div>`;
           })
           .join("") +
@@ -354,9 +373,20 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
     this.shadowRoot.querySelectorAll(".qr-item:not(.disabled)").forEach((el) => {
       el.addEventListener("click", () => {
         const i = parseInt(el.dataset.idx, 10);
+        const itemText = enriched[i].item;
+        if (this._buyLocks.has(itemText)) return;
+
+        this._buyLocks.add(itemText);
+        setTimeout(() => this._buyLocks.delete(itemText), 5000);
+
+        // Reflect the lock immediately, don't wait for hass to push new state.
+        el.classList.add("disabled");
+        const badge = el.querySelector(".qr-buy-badge");
+        if (badge) badge.textContent = "⏳ Buying...";
+
         this._callService("buy_item", {
           config_entry_id: entryId,
-          item_text: enriched[i].item,
+          item_text: itemText,
         });
       });
     });
