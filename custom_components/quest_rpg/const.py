@@ -45,6 +45,7 @@ SERVICE_BUY_ITEM = "buy_item"
 SERVICE_SELL_VOUCHER = "sell_voucher"
 SERVICE_REDEEM_VOUCHER = "redeem_voucher"
 SERVICE_ADD_GOLD = "add_gold"
+SERVICE_ADD_SHOP_ITEM = "add_shop_item"
 
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_QUEST_TEXT = "quest_text"
@@ -52,6 +53,11 @@ ATTR_ITEM_TEXT = "item_text"
 ATTR_VOUCHER_TEXT = "voucher_text"
 ATTR_AMOUNT = "amount"
 ATTR_TASK_TEXT = "task_text"
+ATTR_FULL_REFUND = "full_refund"
+ATTR_ITEM_NAME = "name"
+ATTR_ITEM_EMOJI = "emoji"
+ATTR_ITEM_PRICE = "price"
+ATTR_ITEM_STOCK = "stock"
 
 # Item text convention: "<name> (₡<price>) (<stock|empty>)" for shop items.
 # Quests carry their gold reward the same way: "<description> (₡<reward>)".
