@@ -23,6 +23,11 @@ from homeassistant.helpers.event import async_track_time_change
 from .const import (
     ATTR_AMOUNT,
     ATTR_CONFIG_ENTRY_ID,
+    ATTR_FULL_REFUND,
+    ATTR_ITEM_EMOJI,
+    ATTR_ITEM_NAME,
+    ATTR_ITEM_PRICE,
+    ATTR_ITEM_STOCK,
     ATTR_ITEM_TEXT,
     ATTR_QUEST_TEXT,
     ATTR_TASK_TEXT,
@@ -42,6 +47,7 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     SERVICE_ADD_GOLD,
+    SERVICE_ADD_SHOP_ITEM,
     SERVICE_ADD_TASK,
     SERVICE_BUY_ITEM,
     SERVICE_COMPLETE_QUEST,
@@ -60,6 +66,7 @@ from .helpers import (
     extract_stock,
     strip_price_and_stock,
     strip_price_only,
+    with_stock,
 )
 from .quest_ai import QuestAiError, generate_quest
 
@@ -289,11 +296,12 @@ def _async_register_services(hass: HomeAssistant) -> None:
                     break
 
     async def handle_sell_voucher(call: ServiceCall) -> None:
-        """Sell a voucher back for half its value (impulse-buy undo)."""
+        """Sell a voucher back. Half value normally, full value for admins."""
+        full_refund = call.data.get(ATTR_FULL_REFUND, False)
         await _redeem_voucher_common(
             call.data[ATTR_CONFIG_ENTRY_ID],
             call.data[ATTR_VOUCHER_TEXT],
-            refund_fraction=0.5,
+            refund_fraction=1.0 if full_refund else 0.5,
         )
 
     async def handle_redeem_voucher(call: ServiceCall) -> None:
@@ -308,6 +316,18 @@ def _async_register_services(hass: HomeAssistant) -> None:
         await _add_gold(
             hass, call.data[ATTR_CONFIG_ENTRY_ID], call.data[ATTR_AMOUNT]
         )
+
+    async def handle_add_shop_item(call: ServiceCall) -> None:
+        entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
+        name = call.data[ATTR_ITEM_NAME].strip()
+        emoji = (call.data.get(ATTR_ITEM_EMOJI) or "").strip()
+        price = int(call.data[ATTR_ITEM_PRICE])
+        stock = call.data.get(ATTR_ITEM_STOCK)
+        stock = int(stock) if stock not in (None, "") else None
+
+        display_name = f"{emoji} {name}".strip() if emoji else name
+        item_text = with_stock(display_name, price, stock)
+        _todo(hass, entry_id, SUFFIX_SHOP_ITEMS).add_text_item(item_text)
 
     entry_id_schema = {vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string}
 
@@ -342,7 +362,11 @@ def _async_register_services(hass: HomeAssistant) -> None:
         SERVICE_SELL_VOUCHER,
         handle_sell_voucher,
         schema=vol.Schema(
-            {**entry_id_schema, vol.Required(ATTR_VOUCHER_TEXT): cv.string}
+            {
+                **entry_id_schema,
+                vol.Required(ATTR_VOUCHER_TEXT): cv.string,
+                vol.Optional(ATTR_FULL_REFUND, default=False): cv.boolean,
+            }
         ),
     )
     hass.services.async_register(
@@ -359,5 +383,19 @@ def _async_register_services(hass: HomeAssistant) -> None:
         handle_add_gold,
         schema=vol.Schema(
             {**entry_id_schema, vol.Required(ATTR_AMOUNT): vol.Coerce(float)}
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ADD_SHOP_ITEM,
+        handle_add_shop_item,
+        schema=vol.Schema(
+            {
+                **entry_id_schema,
+                vol.Required(ATTR_ITEM_NAME): cv.string,
+                vol.Optional(ATTR_ITEM_EMOJI, default=""): cv.string,
+                vol.Required(ATTR_ITEM_PRICE): vol.Coerce(int),
+                vol.Optional(ATTR_ITEM_STOCK): vol.Any(vol.Coerce(int), None, ""),
+            }
         ),
     )
