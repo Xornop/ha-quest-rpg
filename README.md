@@ -57,7 +57,7 @@ When you add the integration you'll be asked for:
 |---|---|
 | Player name | Anything - this becomes the device/entity names, e.g. "johnny" |
 | AI Task entity | Optional. Leave blank to use your HA-wide default AI Task entity. |
-| Quest language | The language quest text should be generated in (default: English) |
+| Quest language | The English name for the language quest text should be generated in, e.g. "English" "Dutch" "German" (default: English) |
 | Wheel spin cost | Gold cost per spin (default: 10) |
 | Max wheel spins per day | How many spins are allowed inside the window (default: 3) |
 | Wheel available from / until | The daily time window the wheel can be spun in (default: 18:30-19:30) |
