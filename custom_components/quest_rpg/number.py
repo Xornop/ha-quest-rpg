@@ -10,6 +10,11 @@ from .const import (
     ATTR_ENTRY_ID,
     ATTR_PLAYER_NAME,
     CONF_PLAYER_NAME,
+    CONF_WHEEL_COST,
+    CONF_WHEEL_MAX_SPINS,
+    DEFAULT_WHEEL_COST,
+    DEFAULT_WHEEL_MAX_SPINS,
+    DEFAULT_WHEEL_PRIZES,
     DOMAIN,
     SUFFIX_GOLD,
     SUFFIX_WHEEL_SPINS,
@@ -77,6 +82,17 @@ class WheelSpinsNumber(_BaseNumber):
     _attr_native_max_value = 999
     _attr_native_step = 1
     _attr_icon = "mdi:ferris-wheel"
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            **super().extra_state_attributes,
+            "cost": self._entry.options.get(CONF_WHEEL_COST, DEFAULT_WHEEL_COST),
+            "max_spins": self._entry.options.get(
+                CONF_WHEEL_MAX_SPINS, DEFAULT_WHEEL_MAX_SPINS
+            ),
+            "prizes": DEFAULT_WHEEL_PRIZES,
+        }
 
 
 async def async_setup_entry(
