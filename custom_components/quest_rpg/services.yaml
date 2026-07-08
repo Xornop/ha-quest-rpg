@@ -67,7 +67,9 @@ buy_item:
 
 sell_voucher:
   name: Sell voucher back
-  description: Returns a purchased voucher for half its gold value.
+  description: >-
+    Returns a purchased voucher for half its gold value (or the full value
+    if full_refund is set - typically reserved for the admin).
   fields:
     config_entry_id:
       name: Player
@@ -80,6 +82,13 @@ sell_voucher:
       required: true
       selector:
         text:
+    full_refund:
+      name: Full refund
+      description: Refund the full value instead of half.
+      required: false
+      default: false
+      selector:
+        boolean:
 
 redeem_voucher:
   name: Redeem voucher
@@ -114,5 +123,46 @@ add_gold:
       selector:
         number:
           min: -999999
+          max: 999999
+          mode: box
+
+add_shop_item:
+  name: Add shop item
+  description: Adds a new item to the player's reward shop.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    name:
+      name: Item name
+      description: e.g. "Ice cream trip"
+      required: true
+      selector:
+        text:
+    emoji:
+      name: Emoji
+      description: Optional icon shown for the item, e.g. "🍦"
+      required: false
+      selector:
+        text:
+    price:
+      name: Price
+      description: Cost in gold.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999999
+          mode: box
+    stock:
+      name: Stock
+      description: Leave empty for unlimited stock.
+      required: false
+      selector:
+        number:
+          min: 0
           max: 999999
           mode: box
