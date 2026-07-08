@@ -1,15 +1,18 @@
 /**
  * Quest RPG Lovelace cards.
  *
- * Four custom elements, all sharing the same parchment/gold RPG theme:
- *   custom:quest-rpg-quests-card    { gold_entity, quests_entity, new_task_entity? }
- *   custom:quest-rpg-shop-card      { gold_entity, shop_entity }
- *   custom:quest-rpg-vouchers-card  { vouchers_entity }
- *   custom:quest-rpg-wheel-card     { gold_entity, spins_entity, cost?, prizes?, max_spins? }
+ * Five custom elements, all sharing the same parchment/gold RPG theme:
+ *   custom:quest-rpg-quests-card      { gold_entity, quests_entity, hide_add_task? }
+ *   custom:quest-rpg-shop-card        { gold_entity, shop_entity }
+ *   custom:quest-rpg-shop-admin-card  { shop_entity }
+ *   custom:quest-rpg-vouchers-card    { vouchers_entity, admin? }
+ *   custom:quest-rpg-wheel-card       { gold_entity, spins_entity, cost?, prizes?, max_spins? }
  *
- * Every write goes through the quest_rpg.* services (or, for the new-task
- * box, the entity's own text.set_value) - no direct entity mutation beyond
- * that, so there is one source of truth in Python.
+ * Every write goes through the quest_rpg.* services - no direct entity
+ * mutation, so there is one source of truth in Python. cost/prizes/max_spins
+ * on the wheel card are read live from the spins entity's attributes (kept
+ * in sync with the integration's options); the config fields are only an
+ * optional manual override.
  */
 
 const THEME = `
@@ -42,6 +45,10 @@ const THEME = `
   .qr-add-input::placeholder { color: #7A5530; }
   .qr-add-btn { background: #C9860A; border: none; border-radius: 8px; color: #1A0E06; font-weight: bold; padding: 0 14px; cursor: pointer; }
   .qr-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .qr-shopadmin-form { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px 4px; }
+  .qr-shopadmin-emoji { flex: 0 0 56px; text-align: center; }
+  .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
+  .qr-shopadmin-num { flex: 0 0 110px; }
 `;
 
 function priceOf(text) {
@@ -100,22 +107,31 @@ class QuestRpgBaseCard extends HTMLElement {
     );
   }
 
-  /** Re-render while preserving focus/value of any <input> the user is using. */
+  /** Re-render while preserving every <input>'s value, plus focus/cursor of the active one. */
   _forceRender() {
     const root = this.shadowRoot;
+    const previousValues = {};
+    root.querySelectorAll("input").forEach((el) => {
+      if (el.id) previousValues[el.id] = el.value;
+    });
+
     const active = root.activeElement;
     const isInput = active && active.tagName === "INPUT";
     const savedId = isInput ? active.id : null;
-    const savedValue = isInput ? active.value : null;
     const savedSelectionStart = isInput ? active.selectionStart : null;
     const savedSelectionEnd = isInput ? active.selectionEnd : null;
 
     this._render();
 
+    root.querySelectorAll("input").forEach((el) => {
+      if (el.id && previousValues[el.id] !== undefined) {
+        el.value = previousValues[el.id];
+      }
+    });
+
     if (savedId) {
       const restored = root.getElementById(savedId);
       if (restored) {
-        restored.value = savedValue;
         restored.focus();
         try {
           restored.setSelectionRange(savedSelectionStart, savedSelectionEnd);
@@ -153,7 +169,7 @@ class QuestRpgBaseCard extends HTMLElement {
       <style>${THEME}</style>
       <div class="qr-card">
         <div class="qr-header">
-          ${gold !== null ? `<div class="qr-gold"><span>🪙</span><span class="qr-gold-amount">${gold} g</span></div>` : ""}
+          ${gold !== null ? `<div class="qr-gold"><span>🪙</span><span class="qr-gold-amount">${gold} ₡</span></div>` : ""}
           <span class="qr-header-icon">${headerIcon}</span>
           <div class="qr-header-title">${title}</div>
           <div class="qr-header-sub">${sub}</div>
@@ -172,7 +188,6 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
     if (!this._hass || !this._config) return;
     const questsEntity = this._entity("quests_entity");
     const goldEntity = this._entity("gold_entity");
-    const newTaskEntity = this._entity("new_task_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
 
     const quests = (questsEntity && questsEntity.attributes.quests) || [];
@@ -181,12 +196,13 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
     const count = quests.length;
 
     let addRow = "";
-    if (newTaskEntity) {
+    if (!this._config.hide_add_task) {
       addRow = `
         <div class="qr-add-row">
           <input id="newTaskInput" class="qr-add-input" type="text" placeholder="Add a new task..." />
           <button id="addTaskBtn" class="qr-add-btn">➕ Add</button>
-        </div>`;
+        </div>
+        <div id="addTaskMsg" class="qr-s"></div>`;
     }
 
     let body;
@@ -208,7 +224,7 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                   <div class="qr-t">⚔️ ${short}</div>
                   <div class="qr-s">
                     🗡️ Tap to complete
-                    <span class="qr-b">${reward > 0 ? `${reward}g` : ""}</span>
+                    <span class="qr-b">${reward > 0 ? `${reward} ₡` : ""}</span>
                     ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
                   </div>
                 </div>
@@ -242,17 +258,35 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
 
     const input = this.shadowRoot.getElementById("newTaskInput");
     const addBtn = this.shadowRoot.getElementById("addTaskBtn");
-    if (input && addBtn && newTaskEntity) {
+    const msg = this.shadowRoot.getElementById("addTaskMsg");
+    if (input && addBtn) {
       const submit = () => {
         const value = input.value.trim();
         if (!value) return;
+        if (!entryId) {
+          if (msg) msg.textContent = "⚠️ Card misconfigured: no entry_id found on quests_entity/gold_entity.";
+          console.error("[quest-rpg] add_task: could not resolve entryId - check card config");
+          return;
+        }
         addBtn.disabled = true;
-        this._hass.callService("text", "set_value", {
-          entity_id: newTaskEntity.entity_id,
-          value,
-        });
+        if (msg) msg.textContent = "⏳ Generating quest...";
+        this._hass
+          .callService("quest_rpg", "add_task", {
+            config_entry_id: entryId,
+            task_text: value,
+          })
+          .then(() => {
+            if (msg) msg.textContent = "";
+          })
+          .catch((err) => {
+            console.error("[quest-rpg] add_task FAILED:", err);
+            if (msg) msg.textContent = `❌ Could not add task: ${err && err.message ? err.message : err}`;
+            input.value = value; // restore so the user doesn't lose their text
+          })
+          .finally(() => {
+            addBtn.disabled = false;
+          });
         input.value = "";
-        setTimeout(() => (addBtn.disabled = false), 1500);
       };
       addBtn.addEventListener("click", submit);
       input.addEventListener("keydown", (ev) => {
@@ -306,7 +340,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
                 <div class="qr-n">${firstWord(naam)}</div>
                 <div style="flex:1;min-width:0;">
                   <div class="qr-t">${restWords(naam)}</div>
-                  <div class="qr-s">🪙 ${e.prijs}g ${stockLabel}</div>
+                  <div class="qr-s">🪙 ${e.prijs} ₡ ${stockLabel}</div>
                 </div>
                 ${!e.disabled ? `<span class="qr-b">🛒 Buy</span>` : ""}
               </div>`;
@@ -330,6 +364,91 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
 }
 
 // ---------------------------------------------------------------------
+// Shop admin card - add new items to the reward shop
+// ---------------------------------------------------------------------
+class QuestRpgShopAdminCard extends QuestRpgBaseCard {
+  _render() {
+    if (!this._hass || !this._config) return;
+    const entryId = this._entryId(this._entity("shop_entity"), this._entity("gold_entity"));
+
+    const body = `
+      <div class="qr-shopadmin-form">
+        <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎁" maxlength="8" />
+        <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
+        <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
+        <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
+      </div>
+      <button id="addItemBtn" class="qr-add-btn" style="width:100%; padding: 8px 0;">➕ Add item to shop</button>
+      <div id="shopAdminMsg" class="qr-s" style="margin-top:6px; text-align:center;"></div>
+    `;
+
+    this.shadowRoot.innerHTML = this._shell(
+      "🧰",
+      "🛠️ Shop Management",
+      "✦ Add new reward shop items ✦",
+      null,
+      body
+    );
+
+    const nameInput = this.shadowRoot.getElementById("itemName");
+    const emojiInput = this.shadowRoot.getElementById("itemEmoji");
+    const priceInput = this.shadowRoot.getElementById("itemPrice");
+    const stockInput = this.shadowRoot.getElementById("itemStock");
+    const btn = this.shadowRoot.getElementById("addItemBtn");
+    const msg = this.shadowRoot.getElementById("shopAdminMsg");
+
+    const submit = () => {
+      const name = nameInput.value.trim();
+      const price = parseInt(priceInput.value, 10);
+      if (!name || !price || price <= 0) {
+        msg.textContent = "⚠️ Enter at least a name and a price.";
+        return;
+      }
+      if (!entryId) {
+        msg.textContent = "⚠️ Card misconfigured: no entry_id found on shop_entity/gold_entity.";
+        console.error("[quest-rpg] add_shop_item: could not resolve entryId - check card config");
+        return;
+      }
+
+      const data = {
+        config_entry_id: entryId,
+        name,
+        emoji: emojiInput.value.trim(),
+        price,
+      };
+      const stockRaw = stockInput.value.trim();
+      if (stockRaw !== "") data.stock = parseInt(stockRaw, 10);
+
+      btn.disabled = true;
+      msg.textContent = "⏳ Adding...";
+      this._hass
+        .callService("quest_rpg", "add_shop_item", data)
+        .then(() => {
+          msg.textContent = `✅ Added "${name}" to the shop.`;
+          nameInput.value = "";
+          emojiInput.value = "";
+          priceInput.value = "";
+          stockInput.value = "";
+        })
+        .catch((err) => {
+          console.error("[quest-rpg] add_shop_item FAILED:", err);
+          msg.textContent = `❌ Could not add item: ${err && err.message ? err.message : err}`;
+        })
+        .finally(() => {
+          btn.disabled = false;
+        });
+    };
+
+    btn.addEventListener("click", submit);
+    [nameInput, emojiInput, priceInput, stockInput].forEach((el) => {
+      el.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") submit();
+      });
+    });
+  }
+}
+
+// ---------------------------------------------------------------------
 // Vouchers card
 // ---------------------------------------------------------------------
 class QuestRpgVouchersCard extends QuestRpgBaseCard {
@@ -338,6 +457,7 @@ class QuestRpgVouchersCard extends QuestRpgBaseCard {
     const vouchersEntity = this._entity("vouchers_entity");
     const vouchers = (vouchersEntity && vouchersEntity.attributes.quests) || [];
     const entryId = this._entryId(vouchersEntity);
+    const isAdmin = !!this._config.admin;
 
     let body;
     if (vouchers.length === 0) {
@@ -349,31 +469,37 @@ class QuestRpgVouchersCard extends QuestRpgBaseCard {
           .map((v, i) => {
             const naam = nameOnly(v);
             const waarde = priceOf(v);
+            const sellAmount = isAdmin ? waarde : Math.floor(waarde / 2);
             return `
               <div class="qr-item" style="cursor:default;" data-idx="${i}">
                 <div class="qr-n">${firstWord(naam)}</div>
                 <div style="flex:1;min-width:0;">
                   <div class="qr-t">${restWords(naam)}</div>
-                  <div class="qr-s">Value: 🪙 ${waarde}g</div>
+                  <div class="qr-s">Value: 🪙 ${waarde} ₡</div>
                 </div>
-                <button class="qr-btn" data-action="redeem" data-idx="${i}">✅ Redeem</button>
-                <button class="qr-btn qr-btn-sell" data-action="sell" data-idx="${i}">↩️ Sell back</button>
+                ${isAdmin ? `<button class="qr-btn" data-action="redeem" data-idx="${i}">✅ Redeem</button>` : ""}
+                <button class="qr-btn qr-btn-sell" data-action="sell" data-idx="${i}">↩️ Sell back (${sellAmount} ₡)</button>
               </div>`;
           })
           .join("") +
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>`;
     }
 
-    this.shadowRoot.innerHTML = this._shell("📋", "⚔️ Voucher Management", "✦ Pending rewards ✦", null, body);
+    this.shadowRoot.innerHTML = this._shell(
+      "📋",
+      "⚔️ Voucher Management",
+      isAdmin ? "✦ Admin mode ✦" : "✦ Pending rewards ✦",
+      null,
+      body
+    );
 
     this.shadowRoot.querySelectorAll("button[data-action]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const i = parseInt(btn.dataset.idx, 10);
         const service = btn.dataset.action === "redeem" ? "redeem_voucher" : "sell_voucher";
-        this._callService(service, {
-          config_entry_id: entryId,
-          voucher_text: vouchers[i],
-        });
+        const data = { config_entry_id: entryId, voucher_text: vouchers[i] };
+        if (service === "sell_voucher" && isAdmin) data.full_refund = true;
+        this._callService(service, data);
       });
     });
   }
@@ -386,13 +512,6 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
   constructor() {
     super();
     this._spinning = false;
-  }
-
-  setConfig(config) {
-    super.setConfig(config);
-    this._cost = config.cost ?? 10;
-    this._prizes = config.prizes ?? [0, 5, 10, 15, 20, 30];
-    this._maxSpins = config.max_spins ?? 3;
   }
 
   set hass(hass) {
@@ -426,10 +545,21 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     const spinsToday = spinsEntity ? parseInt(spinsEntity.state, 10) || 0 : 0;
     const entryId = this._entryId(goldEntity, spinsEntity);
 
+    // Read cost/prizes/max_spins live from the entity (kept in sync with
+    // the integration's options); config values, if given, override them.
+    const attrs = (spinsEntity && spinsEntity.attributes) || {};
+    this._cost = this._config.cost ?? attrs.cost ?? 10;
+    this._prizes = this._config.prizes ?? attrs.prizes ?? [0, 5, 10, 15, 20, 30];
+    this._maxSpins = this._config.max_spins ?? attrs.max_spins ?? 3;
+
     if (this.shadowRoot.querySelector("#wheel") && this._built) {
-      // already built - only refresh the gold readout unless we're mid-spin
-      const goldLabel = this.shadowRoot.querySelector("#goldLabel");
-      if (goldLabel && !this._spinning) goldLabel.textContent = `${gold} g`;
+      // already built - only refresh the readouts unless we're mid-spin
+      if (!this._spinning) {
+        const goldLabel = this.shadowRoot.querySelector("#goldLabel");
+        if (goldLabel) goldLabel.textContent = `${gold} ₡`;
+        const sub = this.shadowRoot.querySelector(".qr-header-sub");
+        if (sub) sub.textContent = `✦ ${spinsToday}/${this._maxSpins} spins used today ✦`;
+      }
       return;
     }
     this._built = true;
@@ -460,7 +590,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
       </style>
       <div class="qr-card" style="text-align:center; padding-bottom: 16px;">
         <div class="qr-header">
-          <div class="qr-gold"><span>🪙</span><span id="goldLabel" class="qr-gold-amount">${gold} g</span></div>
+          <div class="qr-gold"><span>🪙</span><span id="goldLabel" class="qr-gold-amount">${gold} ₡</span></div>
           <span class="qr-header-icon">🎡</span>
           <div class="qr-header-title">Wheel of Fortune</div>
           <div class="qr-header-sub">✦ ${spinsToday}/${this._maxSpins} spins used today ✦</div>
@@ -474,13 +604,13 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
               ${this._prizes
                 .map(
                   (p, i) =>
-                    `<text transform="rotate(${rotations[i]}) translate(65,0) rotate(90)" text-anchor="middle" class="wheel-text">${p}g</text>`
+                    `<text transform="rotate(${rotations[i]}) translate(65,0) rotate(90)" text-anchor="middle" class="wheel-text">${p} ₡</text>`
                 )
                 .join("")}
             </g>
           </svg>
         </div>
-        <div id="result" class="wheel-result">Spin for ${this._cost} gold!</div>
+        <div id="result" class="wheel-result">Spin for ${this._cost} ₡!</div>
         <button id="spin" class="wheel-btn" ${canSpin ? "" : "disabled"}>SPIN</button>
       </div>
     `;
@@ -519,7 +649,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     wheel.style.transform = `rotate(${totalDeg}deg)`;
 
     setTimeout(() => {
-      result.innerText = prize > cost ? `🎉 You won: ${prize}g!` : prize === cost ? `Break even: ${prize}g` : `Unlucky: ${prize}g`;
+      result.innerText = prize > cost ? `🎉 You won: ${prize} ₡!` : prize === cost ? `Break even: ${prize} ₡` : `Unlucky: ${prize} ₡`;
       this._spinning = false;
       this._built = false;
       // Re-render shortly after so the gold/spins readout catches up.
@@ -531,6 +661,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
 const QUEST_RPG_CARDS = [
   ["quest-rpg-quests-card", QuestRpgQuestsCard, "Quest RPG - Quests", "Active quests with reward and deadline."],
   ["quest-rpg-shop-card", QuestRpgShopCard, "Quest RPG - Shop", "Reward shop."],
+  ["quest-rpg-shop-admin-card", QuestRpgShopAdminCard, "Quest RPG - Shop Management", "Add new items to the reward shop."],
   ["quest-rpg-vouchers-card", QuestRpgVouchersCard, "Quest RPG - Vouchers", "Purchased, not-yet-redeemed vouchers."],
   ["quest-rpg-wheel-card", QuestRpgWheelCard, "Quest RPG - Wheel of Fortune", "Daily wheel of fortune."],
 ];
