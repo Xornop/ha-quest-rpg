@@ -1,4 +1,6 @@
-![Quest RPG Logo](custom_components/quest_rpg/brand/logo.png)
+<p align="center">
+  <img src="custom_components/quest_rpg/brand/logo.png" alt="Quest RPG Logo" width="300">
+</p>
 
 # Quest RPG for Home Assistant
 
