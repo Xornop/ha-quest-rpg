@@ -102,8 +102,6 @@ vouchers_entity: sensor.quest_rpg_johnny_vouchers
 type: custom:quest-rpg-wheel-card
 gold_entity: number.quest_rpg_johnny_gold
 spins_entity: number.quest_rpg_johnny_wheel_spins_today
-cost: 10            # keep in sync with your configured wheel cost
-max_spins: 3         # keep in sync with your configured max spins
 prizes: [0, 5, 10, 15, 20, 30]
 ```
 
