@@ -48,7 +48,7 @@ def strip_price_and_stock(text: str) -> str:
 
 
 def strip_price_only(text: str) -> str:
-    return re.sub(r"\s*\(₡\d+\)\s*$", "", text).strip()
+    return re.sub(r"\s*\(₡\d+\)[.!?]*\s*$", "", text).strip()
 
 
 def with_stock(name: str, price: int, stock: int | None) -> str:
