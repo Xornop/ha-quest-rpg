@@ -10,6 +10,7 @@ default.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 
 from homeassistant.core import HomeAssistant
@@ -32,6 +33,10 @@ sometimes a friendly favour.
 time-consuming the task is. If the task already mentions a point or gold \
 amount, use that instead.
 - Write the quest text in {language}.
+- The reward MUST be the very last thing in the string, formatted exactly \
+as "(₡N)" with N a whole number. Do not add a period, exclamation mark, or \
+any other character after the closing parenthesis - it must be the last \
+character of the string.
 
 Rules for the deadline:
 - Look for time references in the task (e.g. "before 10am", "today", \
@@ -46,9 +51,10 @@ STRUCTURE = {
     "quest": {
         "selector": {"text": {}},
         "description": (
-            "The rewritten quest text, ending with the gold reward "
+            "The rewritten quest text. It MUST end with the gold reward "
             "formatted exactly as (₡N), e.g. 'Slay the dust-dragon under "
-            "the bed (₡15)'."
+            "the bed (₡15)' - the closing parenthesis must be the very "
+            "last character, no trailing period or other punctuation."
         ),
         "required": True,
     },
@@ -121,6 +127,12 @@ async def generate_quest(
     quest_text = payload.get("quest")
     if not quest_text:
         raise QuestAiError("AI Task returned no quest text")
+
+    quest_text = quest_text.strip()
+    # Defensive backstop: some models still tack on a trailing period or
+    # similar after the closing parenthesis despite the prompt saying not
+    # to - strip it so "(₡N)" is reliably the last thing in the string.
+    quest_text = re.sub(r"(\(₡\d+\))[.!?]+$", r"\1", quest_text)
     if "₡" not in quest_text:
         quest_text = f"{quest_text} (₡10)"
 
