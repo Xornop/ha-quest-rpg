@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_change
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTR_AMOUNT,
@@ -83,18 +84,108 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     frontend_path = Path(__file__).parent / "frontend"
     await hass.http.async_register_static_paths(
         [
+            # cache_headers=True is safe (and desirable) here because the
+            # URL itself is version-busted below - a browser cache hit on
+            # an old version is impossible, and a cache hit on the current
+            # version means the card loads instantly instead of racing
+            # Lovelace's dashboard rendering on a slow first fetch.
             StaticPathConfig(
-                "/quest_rpg_frontend", str(frontend_path), cache_headers=False
+                "/quest_rpg_frontend", str(frontend_path), cache_headers=True
             )
         ]
     )
 
-    # Cache-bust automatically using the file's mtime, so the browser (and
-    # HA's service worker) always fetches a fresh copy after any update -
-    # no manual version bump to remember.
+    # Cache-bust automatically using the file's mtime, so the browser always
+    # fetches a fresh copy after any update - no manual version bump needed.
     card_file = frontend_path / "quest-rpg-card.js"
     version = int(card_file.stat().st_mtime) if card_file.exists() else 0
-    add_extra_js_url(hass, f"{FRONTEND_URL}?v={version}")
+    versioned_url = f"{FRONTEND_URL}?v={version}"
+
+    # Primary path: register as a genuine Lovelace dashboard resource. This
+    # is the mechanism every other custom card uses (HACS included), and -
+    # unlike add_extra_js_url - Lovelace's own dashboard rendering awaits
+    # these before creating any card elements, which avoids a "Custom
+    # element not found" race on a slow/first load (seen most often on the
+    # mobile app, or the very first page load before anything is cached).
+    registered_as_resource = await _async_ensure_lovelace_resource(
+        hass, FRONTEND_URL, versioned_url
+    )
+
+    # Fallback / belt-and-suspenders: also inject it the old way. Harmless
+    # if the resource above already covers it - the card's own registration
+    # code no-ops (with a console warning) on a duplicate define().
+    if not registered_as_resource:
+        _LOGGER.warning(
+            "Could not auto-register the Quest RPG dashboard resource "
+            "(Lovelace may be in YAML mode). Add it manually: "
+            "Settings > Dashboards > Resources > Add Resource > "
+            "URL '%s', type 'JavaScript module'.",
+            versioned_url,
+        )
+    add_extra_js_url(hass, versioned_url)
+
+
+async def _async_ensure_lovelace_resource(
+    hass: HomeAssistant, url_prefix: str, versioned_url: str
+) -> bool:
+    """Create or update our Lovelace resource entry. Returns success.
+
+    The internal shape of hass.data for the lovelace integration has
+    changed across HA versions (a plain dict with a "resources" key on
+    older cores, a LovelaceData dataclass with a .resources attribute on
+    newer ones) - handled defensively here since none of this is a stable
+    public API, just the same approach HACS itself uses.
+    """
+    try:
+        from homeassistant.components.lovelace.resources import (
+            ResourceStorageCollection,
+        )
+    except ImportError:
+        return False
+
+    try:
+        from homeassistant.components.lovelace.const import LOVELACE_DATA
+
+        data_key = LOVELACE_DATA
+    except ImportError:
+        data_key = "lovelace"  # older HA cores keyed this as a plain string
+
+    lovelace_data = hass.data.get(data_key)
+    if lovelace_data is None:
+        return False
+
+    resources = (
+        lovelace_data.resources
+        if hasattr(lovelace_data, "resources")
+        else lovelace_data.get("resources")
+        if isinstance(lovelace_data, dict)
+        else None
+    )
+    if not isinstance(resources, ResourceStorageCollection):
+        return False  # YAML mode (or unrecognized shape) - not writable
+
+    try:
+        await resources.async_get_info()  # ensures the collection is loaded
+        existing = next(
+            (
+                item
+                for item in resources.async_items()
+                if item.get("url", "").split("?")[0] == url_prefix
+            ),
+            None,
+        )
+        if existing is None:
+            await resources.async_create_item(
+                {"res_type": "module", "url": versioned_url}
+            )
+        elif existing.get("url") != versioned_url:
+            await resources.async_update_item(
+                existing["id"], {"url": versioned_url}
+            )
+        return True
+    except Exception as err:  # noqa: BLE001 - never block setup on this
+        _LOGGER.warning("Could not auto-register Lovelace resource: %s", err)
+        return False
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -168,6 +259,24 @@ async def _do_add_task(hass: HomeAssistant, entry_id: str, task_text: str) -> No
     _todo(hass, entry_id, SUFFIX_QUESTS).add_text_item(quest_text, due=due)
 
 
+def _wheel_window_is_open(entry: ConfigEntry) -> bool:
+    """Real-time check, independent of whether the daily open/close jobs
+    actually fired (e.g. HA was restarted right when one was due - the
+    scheduled jobs alone left the spin counter unreliable across a missed
+    event, so this is now the authoritative gate)."""
+    start_str = entry.options.get(CONF_WHEEL_WINDOW_START, DEFAULT_WHEEL_WINDOW_START)
+    end_str = entry.options.get(CONF_WHEEL_WINDOW_END, DEFAULT_WHEEL_WINDOW_END)
+    start = dt_util.parse_time(start_str)
+    end = dt_util.parse_time(end_str)
+    if start is None or end is None:
+        return True  # misconfigured - fail open rather than lock the wheel
+
+    now = dt_util.now().time()
+    if start <= end:
+        return start <= now <= end
+    return now >= start or now <= end  # window wraps past midnight
+
+
 def _schedule_wheel_window(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """(Re)arm the two daily jobs that open/close the fortune wheel window."""
     entry_data = hass.data[DOMAIN][entry.entry_id]
@@ -228,13 +337,17 @@ def _async_register_services(hass: HomeAssistant) -> None:
         max_spins = entry.options.get(CONF_WHEEL_MAX_SPINS, DEFAULT_WHEEL_MAX_SPINS)
         prizes = DEFAULT_WHEEL_PRIZES
 
+        if not _wheel_window_is_open(entry):
+            raise HomeAssistantError(
+                "The wheel is only available during its configured daily time window"
+            )
+
         gold = _gold_entity(hass, entry_id)
         spins = _spins_entity(hass, entry_id)
 
         if (spins.native_value or 0) >= max_spins:
             raise HomeAssistantError(
-                "The wheel isn't available right now (outside its daily window, "
-                "or today's spins are used up)"
+                "The wheel isn't available right now (today's spins are used up)"
             )
         if (gold.native_value or 0) < cost:
             raise HomeAssistantError("Not enough gold to spin the wheel")
