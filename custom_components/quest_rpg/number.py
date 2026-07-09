@@ -12,9 +12,13 @@ from .const import (
     CONF_PLAYER_NAME,
     CONF_WHEEL_COST,
     CONF_WHEEL_MAX_SPINS,
+    CONF_WHEEL_WINDOW_END,
+    CONF_WHEEL_WINDOW_START,
     DEFAULT_WHEEL_COST,
     DEFAULT_WHEEL_MAX_SPINS,
     DEFAULT_WHEEL_PRIZES,
+    DEFAULT_WHEEL_WINDOW_END,
+    DEFAULT_WHEEL_WINDOW_START,
     DOMAIN,
     SUFFIX_GOLD,
     SUFFIX_WHEEL_SPINS,
@@ -92,6 +96,12 @@ class WheelSpinsNumber(_BaseNumber):
                 CONF_WHEEL_MAX_SPINS, DEFAULT_WHEEL_MAX_SPINS
             ),
             "prizes": DEFAULT_WHEEL_PRIZES,
+            "window_start": self._entry.options.get(
+                CONF_WHEEL_WINDOW_START, DEFAULT_WHEEL_WINDOW_START
+            ),
+            "window_end": self._entry.options.get(
+                CONF_WHEEL_WINDOW_END, DEFAULT_WHEEL_WINDOW_END
+            ),
         }
 
 
