@@ -1,0 +1,40 @@
+# Quest RPG - Raw admin management cards
+#
+# Same as the bottom section of the original dashboard: plain todo-list
+# cards for direct editing, plus a gold tile with +/- buttons (not a
+# slider). Put these on an admin-only view/section using HA's visibility
+# condition, same as the original.
+#
+# EDIT the entity IDs for your player.
+
+- type: todo-list
+  entity: todo.liselotte_quests
+  hide_create: true
+  title: Quests
+  # hide_create: true because new quests should come from the AI (via the
+  # add-task input card) so they get the RPG flavour text + gold reward -
+  # set to false if you want to add plain quests manually too, just
+  # remember to include "(₡N)" yourself if you do.
+
+- type: todo-list
+  entity: todo.liselotte_shop_items
+  hide_section_headers: true
+  title: Shop items
+  # Add items as: <emoji> <name> (₡<price>) (<stock>)
+  # e.g. "🍦 Ice cream trip (₡40) (2)"  - use (∞) or omit the stock group
+  # entirely for unlimited stock.
+
+- type: todo-list
+  entity: todo.liselotte_vouchers
+  hide_section_headers: true
+  title: Vouchers
+
+- type: tile
+  entity: number.liselotte_gold
+  vertical: false
+  features:
+    - type: numeric-input
+      style: buttons
+  features_position: bottom
+  # style: buttons gives the +/- number box from the original design
+  # instead of a slider.

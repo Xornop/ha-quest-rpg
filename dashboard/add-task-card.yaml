@@ -1,0 +1,9 @@
+# Quest RPG - Add task input
+#
+# Same card type the original used. The AI-generation flow (text entity ->
+# ai_task.generate_data -> item added with due date) is fully built into
+# the integration now, so this card just needs to point at the right
+# entity - no automation required on your end for this part.
+
+type: custom:lovelace-multiline-text-input-card
+entity: text.liselotte_new_task

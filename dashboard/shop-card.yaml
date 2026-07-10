@@ -1,0 +1,160 @@
+# Quest RPG - Shop card
+#
+# EDIT THESE THREE LINES for your player:
+#   gold_entity  -> number.<player>_gold
+#   shop_sensor  -> sensor.<player>_shop_items_attributes
+#   shop_todo    -> todo.<player>_shop_items
+#   vouchers_todo -> todo.<player>_vouchers
+
+type: custom:html-template-card
+ignore_line_breaks: true
+content: >
+  {% set gold_entity = 'number.liselotte_gold' %}
+  {% set shop_sensor = 'sensor.liselotte_shop_items_attributes' %}
+  {% set shop_todo = 'todo.liselotte_shop_items' %}
+  {% set vouchers_todo = 'todo.liselotte_vouchers' %}
+
+  {% set gold = states(gold_entity) | int(0) %} {%
+  set items_raw = state_attr(shop_sensor, 'quests') %} {% set vine_header = '<svg
+  style="position:absolute;top:0;left:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M0 0 Q25 15 30 38 Q34 58 22 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M10 12 Q20 8 19 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M22 34 Q12 30 11 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M24 54 Q33 50 32
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="18" cy="19" rx="6" ry="4"
+  fill="#3A8C3A" transform="rotate(20 18 19)"/><ellipse cx="12" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(-25 12
+  39)"/><ellipse cx="31" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(15 31 60)"/><ellipse cx="23" cy="74" rx="4" ry="2.8"
+  fill="#4CAF50" transform="rotate(-10 23 74)"
+  opacity="0.85"/></svg><svg
+  style="position:absolute;top:0;right:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M100 0 Q75 15 70 38 Q66 58 78 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M90 12 Q80 8 81 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M78 34 Q88 30 89 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M76 54 Q67 50 68
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="82" cy="19" rx="6" ry="4"
+  fill="#4CAF50" transform="rotate(-20 82 19)"/><ellipse cx="88" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(25 88
+  39)"/><ellipse cx="69" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(-15 69 60)"/><ellipse cx="77" cy="74" rx="4"
+  ry="2.8" fill="#4CAF50" transform="rotate(10 77 74)"
+  opacity="0.85"/></svg>' %} {% set vines = [
+    '<svg style="position:absolute;top:0;right:0;width:90px;height:80px;pointer-events:none;" viewBox="0 0 90 80"><path d="M90 0 Q70 10 60 25 Q50 38 55 55" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M75 8 Q65 5 62 14" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M65 20 Q72 15 74 24" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M58 36 Q66 34 66 43" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="62" cy="13" rx="5" ry="3.5" fill="#3A8C3A" transform="rotate(-30 62 13)"/><ellipse cx="73" cy="23" rx="5" ry="3" fill="#2D6A2D" transform="rotate(20 73 23)"/><ellipse cx="65" cy="41" rx="4.5" ry="3" fill="#3A8C3A" transform="rotate(-15 65 41)"/><ellipse cx="54" cy="54" rx="4" ry="2.5" fill="#4CAF50" transform="rotate(10 54 54)" opacity="0.8"/></svg>',
+    '<svg style="position:absolute;top:0;left:0;width:80px;height:75px;pointer-events:none;" viewBox="0 0 80 75"><path d="M0 0 Q18 12 22 30 Q26 46 18 62" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M8 10 Q16 7 16 17" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M18 26 Q10 22 9 32" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M20 44 Q28 42 27 52" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="15" cy="16" rx="5" ry="3" fill="#3A8C3A" transform="rotate(20 15 16)"/><ellipse cx="10" cy="30" rx="4.5" ry="3" fill="#2D6A2D" transform="rotate(-25 10 30)"/><ellipse cx="26" cy="50" rx="4" ry="3" fill="#3A8C3A" transform="rotate(15 26 50)"/><ellipse cx="19" cy="61" rx="3.5" ry="2.5" fill="#4CAF50" transform="rotate(-10 19 61)" opacity="0.8"/></svg>',
+    '<svg style="position:absolute;top:0;right:0;width:90px;height:80px;pointer-events:none;" viewBox="0 0 90 80"><path d="M90 0 Q70 10 60 25 Q50 38 55 55" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M75 8 Q65 5 62 14" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M63 22 Q71 18 72 28" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="62" cy="13" rx="5" ry="3.5" fill="#4CAF50" transform="rotate(-30 62 13)"/><ellipse cx="71" cy="26" rx="5" ry="3" fill="#2D6A2D" transform="rotate(20 71 26)"/><ellipse cx="54" cy="54" rx="4" ry="2.5" fill="#3A8C3A" transform="rotate(10 54 54)" opacity="0.8"/></svg><svg style="position:absolute;bottom:0;left:0;width:70px;height:60px;pointer-events:none;" viewBox="0 0 70 60"><path d="M0 60 Q15 45 22 30 Q28 18 20 5" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M10 50 Q18 52 17 42" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M20 32 Q12 28 11 38" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="16" cy="43" rx="4.5" ry="3" fill="#3A8C3A" transform="rotate(15 16 43)"/><ellipse cx="12" cy="30" rx="4" ry="3" fill="#4CAF50" transform="rotate(-20 12 30)" opacity="0.9"/><ellipse cx="21" cy="7" rx="3.5" ry="2.5" fill="#2D6A2D" transform="rotate(5 21 7)"/></svg>'
+  ] %}
+
+  {% set ns = namespace(items_with_price=[]) %} {% if items_raw %}
+    {% for item in items_raw %}
+      {% set prijs = item | regex_findall('₡(\d+)') | first | int(0) %}
+      {% set stock_raw = item | regex_findall('\(([^₡)]+)\)\s*$') | first | default('null') | trim %}
+      {% set stock_val = none if stock_raw == 'null' else stock_raw | int(0) %}
+      {% set outofstock = stock_val is not none and stock_val <= 0 %}
+      {% set cantafford = gold < prijs %}
+      {% set disabled = outofstock or cantafford %}
+      {% set ns.items_with_price = ns.items_with_price + [{'item': item, 'prijs': prijs, 'stock_raw': stock_raw, 'stock_val': stock_val, 'outofstock': outofstock, 'cantafford': cantafford, 'disabled': disabled, 'naam': item | regex_replace('\s*\(₡\d+\)\s*\([^)]+\)$', '') | trim}] %}
+    {% endfor %}
+  {% endif %} {% set affordable_sorted = ns.items_with_price |
+  selectattr('disabled', 'false') | list | sort(attribute='prijs') %} {%
+  set toodear_sorted = ns.items_with_price | selectattr('outofstock',
+  'false') | selectattr('cantafford', 'true') | list |
+  sort(attribute='prijs') %} {% set outofstock_sorted =
+  ns.items_with_price | selectattr('outofstock', 'true') | list |
+  sort(attribute='prijs') %} {% set all_sorted = affordable_sorted +
+  toodear_sorted + outofstock_sorted %}
+
+  <style>
+    .scard { background: #1A0E06; border: 1px solid #5A3018; border-radius: 14px; overflow: hidden; }
+    .sheader { background: #2C1810; border-bottom: 1px solid #5A3018; padding: 20px 18px 18px; position: relative; overflow: hidden; text-align: center; }
+    .sheader::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #C9860A; }
+    .sheader-icon { font-size: 28px; display: block; margin-bottom: 6px; position: relative; z-index: 1; }
+    .sheader-title { font-size: 15px; font-weight: 500; color: #F5D78E; letter-spacing: 0.04em; position: relative; z-index: 1; }
+    .sheader-sub { font-size: 12px; color: #A07848; margin-top: 4px; position: relative; z-index: 1; }
+    .sgold { position: absolute; top: 12px; left: 14px; z-index: 2; display: flex; align-items: center; gap: 5px; background: #3A1A08; border: 1px solid #C9860A; border-radius: 99px; padding: 4px 10px 4px 7px; }
+    .sgold-icon { font-size: 14px; line-height: 1; }
+    .sgold-amount { font-size: 12px; font-weight: 500; color: #F5D78E; line-height: 1; }
+    .sgold-label { font-size: 9px; color: #A07848; line-height: 1; margin-top: 1px; }
+    .sbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .sdiv { font-size: 11px; text-align: center; color: #6B3D1E; letter-spacing: 6px; margin: 2px 0; }
+    .si { background: #1E1208; border: 1px solid #5A3018; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; position: relative; overflow: hidden; border-left: 3px solid #C9860A; }
+    .si.buyable { cursor: pointer; }
+    .si.outofstock { opacity: 0.4; border-left-color: #C93030; }
+    .si-icon { width: 36px; height: 36px; border-radius: 50%; background: #3A1A08; border: 1px solid #8B5A2B; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .si-body { flex: 1; min-width: 0; }
+    .si-name { font-size: 13px; font-weight: 500; color: #F0C060; line-height: 1.4; }
+    .si-sub { font-size: 11px; color: #7A5530; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .si-price { font-size: 11px; color: #C9860A; font-weight: 500; }
+    .si-stock { font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #3A1A08; border: 0.5px solid #8B5A2B; color: #A07848; }
+    .badge-red { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #2E1010; border: 0.5px solid #C93030; color: #C93030; }
+    .koop-btn { font-size: 11px; padding: 6px 14px; border-radius: 99px; background: #1A2E1A; border: 1px solid #4CAF50; color: #4CAF50; white-space: nowrap; flex-shrink: 0; font-weight: 500; pointer-events: none; }
+    .aempty { text-align: center; padding: 18px 0 10px; color: #3A8C3A; font-size: 13px; }
+  </style>
+
+  <div class="scard">
+    <div class="sheader">
+      {{ vine_header }}
+      <div class="sgold">
+        <span class="sgold-icon">🪙</span>
+        <div>
+          <div class="sgold-amount">{{ gold }} ₡</div>
+          <div class="sgold-label">gold</div>
+        </div>
+      </div>
+      <span class="sheader-icon">🏪</span>
+      <div class="sheader-title">🛒 Reward Shop</div>
+      <div class="sheader-sub">✦ Spend your hard-earned gold ✦</div>
+    </div>
+    <div class="sbody">
+      {% if items_raw %}
+        <div class="sdiv">✦ · · · ✦ · · · ✦</div>
+        {% for entry in all_sorted %}
+          {% set item = entry.item %}
+          {% set naam = entry.naam %}
+          {% set prijs = entry.prijs %}
+          {% set stock_raw = entry.stock_raw %}
+          {% set stock_val = entry.stock_val %}
+          {% set outofstock = entry.outofstock %}
+          {% set cantafford = entry.cantafford %}
+          {% set disabled = entry.disabled %}
+          <div class="si {% if outofstock %}outofstock{% elif not disabled %}buyable{% endif %}"
+            {% if not disabled %}
+            data-item="{{ item | e }}"
+            data-naam="{{ naam | e }}"
+            data-prijs="{{ prijs }}"
+            data-waarde="{{ prijs | int }}"
+            data-stock="{{ stock_raw }}"
+            onclick="if(window._buying===this.dataset.naam)return;window._buying=this.dataset.naam;setTimeout(function(){window._buying=null;},5000);var h=this.getRootNode().host.hass;var item=this.dataset.item;var naam=this.dataset.naam;var p=parseInt(this.dataset.prijs);var w=parseInt(this.dataset.waarde);var s=this.dataset.stock;var c=parseFloat(h.states['{{ gold_entity }}'].state)||0;if(c<p){window._buying=null;return;}var todoText=naam+' (₡'+w+')';h.callService('number','set_value',{entity_id:'{{ gold_entity }}',value:c-p});h.callService('todo','add_item',{entity_id:'{{ vouchers_todo }}',item:todoText});if(s!=='null'){var ns=parseInt(s)-1;var ni=item.replace(/\(\d+\)(\s*)$/,'('+ns+')$1');h.callService('todo','update_item',{entity_id:'{{ shop_todo }}',item:item,rename:ni});};"
+            {% endif %}>
+            {{ vines[loop.index0 % 3] }}
+            <div class="si-icon">{{ naam | regex_findall('^(\S+)') | first | default('🎁') }}</div>
+            <div class="si-body">
+              <div class="si-name">{{ naam | regex_replace('^\S+\s*', '') }}</div>
+              <div class="si-sub">
+                <span class="si-price">🪙 {{ prijs }} ₡</span>
+                {% if outofstock %}
+                  <span class="badge-red">✕ Out of stock</span>
+                {% elif stock_val is none %}
+                  <span class="si-stock">∞</span>
+                {% else %}
+                  <span class="si-stock">{{ stock_val }} available</span>
+                {% endif %}
+              </div>
+            </div>
+            {% if not disabled %}
+              <span class="koop-btn">🛒 Buy</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="sdiv">✦ · · · ✦ · · · ✦</div>
+      {% else %}
+        <div class="aempty">⏳ Shop is empty...</div>
+      {% endif %}
+    </div>
+  </div>

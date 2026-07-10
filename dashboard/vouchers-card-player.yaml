@@ -1,0 +1,144 @@
+# Quest RPG - Vouchers card (player view)
+#
+# Sell-back only, at half value - matches the original "Gekochte Vouchers"
+# card. Use HA's built-in visibility condition to show this to the player
+# and the admin card (vouchers-card-admin.yaml) to yourself, same as the
+# original setup:
+#
+#   visibility:
+#     - condition: user
+#       users: [<player's HA user id>]
+#
+# EDIT these five lines for your player:
+#   vouchers_sensor -> sensor.<player>_vouchers_attributes
+#   vouchers_todo    -> todo.<player>_vouchers
+#   shop_sensor      -> sensor.<player>_shop_items_attributes
+#   shop_todo        -> todo.<player>_shop_items
+#   gold_entity      -> number.<player>_gold
+
+type: custom:html-template-card
+ignore_line_breaks: true
+content: >
+  {% set vouchers_sensor = 'sensor.liselotte_vouchers_attributes' %}
+  {% set vouchers_todo = 'todo.liselotte_vouchers' %}
+  {% set shop_sensor = 'sensor.liselotte_shop_items_attributes' %}
+  {% set shop_todo = 'todo.liselotte_shop_items' %}
+  {% set gold_entity = 'number.liselotte_gold' %}
+
+  {% set vouchers = state_attr(vouchers_sensor, 'quests') %} {% set vine_header = '<svg
+  style="position:absolute;top:0;left:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M0 0 Q25 15 30 38 Q34 58 22 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M10 12 Q20 8 19 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M22 34 Q12 30 11 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M24 54 Q33 50 32
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="18" cy="19" rx="6" ry="4"
+  fill="#3A8C3A" transform="rotate(20 18 19)"/><ellipse cx="12" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(-25 12
+  39)"/><ellipse cx="31" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(15 31 60)"/><ellipse cx="23" cy="74" rx="4" ry="2.8"
+  fill="#4CAF50" transform="rotate(-10 23 74)"
+  opacity="0.85"/></svg><svg
+  style="position:absolute;top:0;right:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M100 0 Q75 15 70 38 Q66 58 78 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M90 12 Q80 8 81 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M78 34 Q88 30 89 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M76 54 Q67 50 68
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="82" cy="19" rx="6" ry="4"
+  fill="#4CAF50" transform="rotate(-20 82 19)"/><ellipse cx="88" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(25 88
+  39)"/><ellipse cx="69" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(-15 69 60)"/><ellipse cx="77" cy="74" rx="4"
+  ry="2.8" fill="#4CAF50" transform="rotate(10 77 74)"
+  opacity="0.85"/></svg>' %}
+
+  <style>
+    .acard { background: #1A0E06; border: 1px solid #5A3018; border-radius: 14px; overflow: hidden; }
+    .aheader { background: #2C1810; border-bottom: 1px solid #5A3018; padding: 20px 18px 18px; position: relative; overflow: hidden; text-align: center; }
+    .aheader-title { font-size: 15px; font-weight: 500; color: #F5D78E; letter-spacing: 0.04em; position: relative; z-index: 1; }
+    .aheader-sub { font-size: 12px; color: #A07848; margin-top: 4px; position: relative; z-index: 1; }
+    .abody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .adiv { font-size: 11px; text-align: center; color: #6B3D1E; letter-spacing: 6px; margin: 2px 0; }
+    .ai { background: #1E1208; border: 1px solid #5A3018; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; position: relative; overflow: hidden; border-left: 3px solid #3A8C3A; }
+    .ai-icon { width: 36px; height: 36px; border-radius: 50%; background: #1A2E1A; border: 1px solid #3A8C3A; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .ai-body { flex: 1; min-width: 0; }
+    .ai-name { font-size: 13px; font-weight: 500; color: #F0C060; line-height: 1.4; }
+    .ai-sub { font-size: 11px; color: #7A5530; margin-top: 3px; }
+    .ai-btn-sell { font-size: 11px; padding: 5px 12px; border-radius: 99px; background: #3A1A08; border: 1px solid #8B5A2B; color: #C9860A; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+    .aempty { text-align: center; padding: 18px 0 10px; color: #3A8C3A; font-size: 13px; }
+  </style>
+
+  <div class="acard">
+    <div class="aheader">
+      {{ vine_header }}
+      <span class="aheader-icon">📋</span>
+      <div class="aheader-title">⚔️ Purchased Vouchers</div>
+      <div class="aheader-sub">✦ Pending rewards ✦</div>
+      <div class="aheader-sub">✦ Wait at least 5 seconds between sell-backs ✦</div>
+    </div>
+    <div class="abody">
+      {% if vouchers and vouchers | count > 0 %}
+        <div class="adiv">✦ · · · ✦ · · · ✦</div>
+        {% for v in vouchers %}
+          {% set naam = v | regex_replace('\s*\(₡\d+\)[.!?]*$', '') | trim %}
+          {% set waarde = v | regex_findall('₡(\d+)') | first | int(0) %}
+          <div class="ai">
+            <div class="ai-icon">{{ naam | regex_findall('^(\S+)') | first | default('🎁') }}</div>
+            <div class="ai-body">
+              <div class="ai-name">{{ naam | regex_replace('^\S+\s*', '') }}</div>
+              <div class="ai-sub">Sell-back value: 🪙 {{ (waarde / 2) | int }} ₡</div>
+            </div>
+            <button class="ai-btn-sell" onclick="
+              if(window._voucher)return;
+              window._voucher='{{ v | replace("'", "\\'") }}';
+              setTimeout(function(){window._voucher=null;},5000);
+
+              var h=this.getRootNode().host.hass;
+              var w={{ waarde }};
+              var sellPrice=Math.floor(w/2);
+              var targetNaam='{{ naam | replace("'", "\\'") }}';
+              var c=parseFloat(h.states['{{ gold_entity }}'].state)||0;
+
+              h.callService('number','set_value',{entity_id:'{{ gold_entity }}',value:c+sellPrice});
+              h.callService('todo','remove_item',{entity_id:'{{ vouchers_todo }}',item:'{{ v | replace("'", "\\'") }}'});
+
+              var shopState=h.states['{{ shop_sensor }}'];
+              if(shopState && shopState.attributes && shopState.attributes.quests){
+                var shopItems=shopState.attributes.quests;
+                for(var i=0;i<shopItems.length;i++){
+                  var sItem=shopItems[i];
+                  var matchPrijs=sItem.match(/₡(\d+)/);
+                  var matchStock=sItem.match(/\(([^₡)]+)\)\s*$/);
+                  if(matchPrijs){
+                    var sPrijs=parseInt(matchPrijs[1]);
+                    var sStockRaw=matchStock?matchStock[1].trim():'null';
+                    var sNaam=sItem.replace(/\s*\(₡\d+\)\s*\([^)]+\)$/,'').trim();
+
+                    if(sNaam===targetNaam && sPrijs===w){
+                      if(sStockRaw!=='null'){
+                        var currentStock=parseInt(sStockRaw);
+                        if(!isNaN(currentStock)){
+                          var newStock=currentStock+1;
+                          var newItem=sItem.replace(/\([^₡)]+\)\s*$/, '('+newStock+')');
+                          h.callService('todo','update_item',{entity_id:'{{ shop_todo }}',item:sItem,rename:newItem});
+                        }
+                      }
+                      break;
+                    }
+                  }
+                }
+              }
+            ">↩️ Sell back</button>
+          </div>
+        {% endfor %}
+        <div class="adiv">✦ · · · ✦ · · · ✦</div>
+      {% else %}
+        <div class="aempty">🌿 No pending vouchers</div>
+      {% endif %}
+    </div>
+  </div>

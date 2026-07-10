@@ -1,0 +1,200 @@
+# Quest RPG - Wheel of Fortune card
+#
+# Ported 1:1 from the original, including the "instant gold deduction"
+# overlay on spin. Two upgrades over the original: cost/prizes/max spins
+# are read live from the integration's config (no more editing the
+# template to change them), and a real wall-clock time check guards the
+# spin button too - not just the daily counter - so a missed scheduled
+# reset (e.g. HA restarting right at the window boundary) can't leave the
+# wheel spinnable outside its configured hours.
+#
+# EDIT THESE TWO LINES for your player:
+#   gold_entity  -> number.<player>_gold
+#   spins_entity -> number.<player>_wheel_spins_today
+
+type: custom:html-template-card
+ignore_line_breaks: true
+content: >
+  {% set gold_entity = 'number.liselotte_gold' %}
+  {% set spins_entity = 'number.liselotte_wheel_spins_today' %}
+
+  {% set gold = states(gold_entity) | int %}
+  {% set spins_today = states(spins_entity) | int(0) %}
+  {% set cost = state_attr(spins_entity, 'cost') | default(10) | int %}
+  {% set max_spins = state_attr(spins_entity, 'max_spins') | default(3) | int %}
+  {% set prizes = state_attr(spins_entity, 'prizes') | default([0, 5, 10, 15, 20, 30]) %}
+  {% set window_start = state_attr(spins_entity, 'window_start') | default('18:30:00') %}
+  {% set window_end = state_attr(spins_entity, 'window_end') | default('19:30:00') %}
+  {% set spins_left = max_spins - spins_today %}
+
+  <style>
+    .wheel-card { background: #1A0E06; border: 1px solid #5A3018; border-radius: 14px; padding: 20px; text-align: center; position: relative; box-sizing: border-box; }
+    .wheel-gold { position: absolute; top: 12px; left: 14px; display: flex; align-items: center; gap: 5px; background: #3A1A08; border: 1px solid #C9860A; border-radius: 99px; padding: 4px 10px; }
+    .wheel-gold-amount { font-size: 12px; font-weight: 500; color: #000000; }
+    #goldOverlay { position: absolute; left: 34px; top: 5px; font-size: 12px; font-weight: 500; color: #F5D78E; pointer-events: none; z-index: 10; }
+    .wheel-sub { font-size: 11px; color: #A07848; margin-top: 34px; }
+    .wheel-container { position: relative; width: 240px; height: 240px; margin: 10px auto 20px; }
+    .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #C9860A; box-sizing: border-box; transition: transform 4.5s cubic-bezier(0.08, 0.85, 0.25, 1); background: #2C1810; }
+    .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 20px solid #D4AF37; z-index: 10; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); }
+    .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; background: #D4AF37; border: 3px solid #1A0E06; border-radius: 50%; z-index: 5; }
+    .wheel-btn { background: #2D6A2D; border: 1px solid #4CAF50; border-radius: 10px; color: white; padding: 12px 24px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #1E4620; transition: all 0.1s ease; user-select: none; margin-top: 10px; display: inline-block; }
+    .wheel-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1E4620; }
+    .wheel-btn.disabled { opacity: 0.4; cursor: not-allowed; background: #2C1810; border-color: #5A3018; box-shadow: none; transform: none; }
+    .wheel-result { margin-top: 15px; height: 24px; font-size: 15px; font-weight: 500; color: #F5D78E; letter-spacing: 0.05em; }
+    .wheel-text { font-family: Roboto, sans-serif; font-size: 13px; font-weight: bold; fill: #F5D78E; }
+  </style>
+
+  <div class="wheel-card">
+    <div class="wheel-gold">
+      <span>🪙</span>
+      <span class="wheel-gold-amount">{{ gold }} ₡</span>
+      <span id="goldOverlay" class="wheel-gold-amount">{{ gold }} ₡</span>
+    </div>
+    <div class="wheel-sub">✦ {{ spins_today }}/{{ max_spins }} spins used today ✦ ({{ window_start[:5] }}-{{ window_end[:5] }}) ✦</div>
+
+    <div class="wheel-container">
+      <div class="wheel-pointer"></div>
+      <div class="wheel-center"></div>
+
+      <svg id="wheel" class="wheel-svg-wrap" viewBox="0 0 200 200">
+        <g transform="translate(100,100)">
+          <path d="M0,0 L100,0 A100,100 0 0,1 50,86.6 Z" fill="#3A1A08"/>
+          <path d="M0,0 L50,86.6 A100,100 0 0,1 -50,86.6 Z" fill="#5A3018"/>
+          <path d="M0,0 L-50,86.6 A100,100 0 0,1 -100,0 Z" fill="#2D6A2D"/>
+          <path d="M0,0 L-100,0 A100,100 0 0,1 -50,-86.6 Z" fill="#1E4620"/>
+          <path d="M0,0 L-50,-86.6 A100,100 0 0,1 50,-86.6 Z" fill="#C9860A"/>
+          <path d="M0,0 L50,-86.6 A100,100 0 0,1 100,0 Z" fill="#D4AF37"/>
+
+          <text transform="rotate(30) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[0] }} ₡</text>
+          <text transform="rotate(90) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[1] }} ₡</text>
+          <text transform="rotate(150) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[2] }} ₡</text>
+          <text transform="rotate(210) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[3] }} ₡</text>
+          <text transform="rotate(270) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[4] }} ₡</text>
+          <text transform="rotate(330) translate(65, 0) rotate(90)" text-anchor="middle" class="wheel-text">{{ prizes[5] }} ₡</text>
+        </g>
+      </svg>
+    </div>
+
+    <div id="result" class="wheel-result">Spin for {{ cost }} ₡!</div>
+
+    <button id="spin" class="wheel-btn {% if gold < cost or spins_left <= 0 %}disabled{% endif %}"
+      data-gold="{{ gold }}" data-cost="{{ cost }}"
+      data-spins="{{ spins_today }}" data-maxspins="{{ max_spins }}"
+      data-wstart="{{ window_start }}" data-wend="{{ window_end }}"
+      data-spinsentity="{{ spins_entity }}">
+      SPIN
+    </button>
+
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      style="display:none"
+      onload="
+        const root = this.getRootNode();
+        const btn = root.getElementById('spin');
+        const wheel = root.getElementById('wheel');
+        const result = root.getElementById('result');
+        const goldOverlay = root.getElementById('goldOverlay');
+        const hass = root.host && root.host.hass;
+
+        if (!btn || btn._bound) return;
+        btn._bound = true;
+
+        function withinWindow(startStr, endStr) {
+          var now = new Date();
+          var nowMin = now.getHours() * 60 + now.getMinutes();
+          var sp = startStr.split(':'); var ep = endStr.split(':');
+          var startMin = parseInt(sp[0]) * 60 + parseInt(sp[1]);
+          var endMin = parseInt(ep[0]) * 60 + parseInt(ep[1]);
+          if (startMin <= endMin) return nowMin >= startMin && nowMin <= endMin;
+          return nowMin >= startMin || nowMin <= endMin; // wraps past midnight
+        }
+
+        btn.onclick = () => {
+          if (btn.classList.contains('disabled')) return;
+
+          const wStart = btn.dataset.wstart;
+          const wEnd = btn.dataset.wend;
+          if (!withinWindow(wStart, wEnd)) {
+            result.innerText = '⏳ The wheel is only open ' + wStart.slice(0,5) + '-' + wEnd.slice(0,5) + '!';
+            return;
+          }
+          const spinsToday = parseInt(btn.dataset.spins);
+          const maxSpins = parseInt(btn.dataset.maxspins);
+          if (spinsToday >= maxSpins) {
+            result.innerText = '⏳ Today\'s spins are used up!';
+            return;
+          }
+
+          btn.classList.add('disabled');
+
+          const gold = parseInt(btn.dataset.gold);
+          const cost = parseInt(btn.dataset.cost);
+
+          if (goldOverlay) {
+            goldOverlay.textContent = (gold - cost) + ' ₡';
+          }
+
+          const segments = [
+            {mult: {{ prizes[0] }} / cost, label: '{{ prizes[0] }} ₡'},
+            {mult: {{ prizes[1] }} / cost, label: '{{ prizes[1] }} ₡'},
+            {mult: {{ prizes[2] }} / cost, label: '{{ prizes[2] }} ₡'},
+            {mult: {{ prizes[3] }} / cost, label: '{{ prizes[3] }} ₡'},
+            {mult: {{ prizes[4] }} / cost, label: '{{ prizes[4] }} ₡'},
+            {mult: {{ prizes[5] }} / cost, label: '{{ prizes[5] }} ₡'}
+          ];
+
+          const index = Math.floor(Math.random()*6);
+          const chosen = segments[index];
+
+          const degPerSeg = 360 / 6;
+          const baseAngle = 270 - (index * degPerSeg) - (degPerSeg / 2);
+          const offset = (Math.random() * 50) - 25;
+          let targetAngle = baseAngle + offset;
+          if (targetAngle < 0) targetAngle += 360;
+
+          const totalDeg = 1800 + targetAngle;
+          wheel.style.transform = 'rotate(' + totalDeg + 'deg)';
+          result.innerText = 'The wheel is spinning...';
+
+          setTimeout(() => {
+            const profit = chosen.mult * cost;
+            const newGold = gold - cost + profit;
+
+            if (hass) {
+              setTimeout(() => {
+                hass.callService('number', 'set_value', {
+                  entity_id: '{{ gold_entity }}',
+                  value: newGold
+                });
+
+                const spinsEntity = btn.dataset.spinsentity;
+                const currentSpin = Number(hass.states[spinsEntity].state) || 0;
+
+                hass.callService('number', 'set_value', {
+                  entity_id: spinsEntity,
+                  value: currentSpin + 1
+                });
+              }, 2000);
+            }
+
+            if (goldOverlay) {
+              goldOverlay.textContent = newGold + ' ₡';
+            }
+            btn.dataset.gold = newGold;
+            btn.dataset.spins = spinsToday + 1;
+
+            result.innerText =
+              profit > cost ? '🎉 You won: ' + chosen.label + '!' :
+              profit === cost ? 'Break even: ' + chosen.label :
+              'Unlucky: ' + chosen.label;
+
+          }, 4500);
+
+          setTimeout(() => {
+            if (parseInt(btn.dataset.spins) < parseInt(btn.dataset.maxspins) && parseInt(btn.dataset.gold) >= cost) {
+              btn.classList.remove('disabled');
+            }
+          }, 7000);
+        };
+      "
+    />
+  </div>
