@@ -1,7 +1,6 @@
 {
   "domain": "quest_rpg",
   "name": "Quest RPG",
-  "after_dependencies": ["lovelace"],
   "codeowners": ["@Xornop"],
   "config_flow": true,
   "documentation": "https://github.com/Xornop/ha-quest-rpg",
