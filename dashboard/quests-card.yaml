@@ -1,0 +1,153 @@
+# Quest RPG - Quests card
+#
+# Ported 1:1 from the original design. Only the entity IDs at the top and
+# the service domain (input_number -> number) changed - everything else,
+# including the vine decorations, roman numerals, and dialog styling, is
+# untouched.
+#
+# EDIT THESE FOUR LINES for your player, then paste the whole card as-is:
+#   gold_entity   -> number.<player>_gold
+#   quests_sensor -> sensor.<player>_quests_attributes
+#   quests_todo   -> todo.<player>_quests
+#   player_name   -> shown in the header title
+
+type: custom:html-template-card
+ignore_line_breaks: true
+content: >
+  {% set gold_entity = 'number.liselotte_gold' %}
+  {% set quests_sensor = 'sensor.liselotte_quests_attributes' %}
+  {% set quests_todo = 'todo.liselotte_quests' %}
+  {% set player_name = 'Liselotte' %}
+
+  {% set quests = state_attr(quests_sensor, 'quests') %} {% set dues =
+  state_attr(quests_sensor, 'due') %}  {% set
+  count = quests | count if quests else 0 %}  {% set gold =
+  states(gold_entity) | int(0) %}  {% set roman =
+  ['I','II','III','IV','V','VI','VII','VIII','IX','X'] %}  {% set vines
+  = [
+    '<svg style="position:absolute;top:0;right:0;width:90px;height:80px;pointer-events:none;" viewBox="0 0 90 80"><path d="M90 0 Q70 10 60 25 Q50 38 55 55" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M75 8 Q65 5 62 14" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M65 20 Q72 15 74 24" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M58 36 Q66 34 66 43" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="62" cy="13" rx="5" ry="3.5" fill="#3A8C3A" transform="rotate(-30 62 13)"/><ellipse cx="73" cy="23" rx="5" ry="3" fill="#2D6A2D" transform="rotate(20 73 23)"/><ellipse cx="65" cy="41" rx="4.5" ry="3" fill="#3A8C3A" transform="rotate(-15 65 41)"/><ellipse cx="54" cy="54" rx="4" ry="2.5" fill="#4CAF50" transform="rotate(10 54 54)" opacity="0.8"/></svg>',
+    '<svg style="position:absolute;top:0;left:0;width:80px;height:75px;pointer-events:none;" viewBox="0 0 80 75"><path d="M0 0 Q18 12 22 30 Q26 46 18 62" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M8 10 Q16 7 16 17" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M18 26 Q10 22 9 32" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M20 44 Q28 42 27 52" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="15" cy="16" rx="5" ry="3" fill="#3A8C3A" transform="rotate(20 15 16)"/><ellipse cx="10" cy="30" rx="4.5" ry="3" fill="#2D6A2D" transform="rotate(-25 10 30)"/><ellipse cx="26" cy="50" rx="4" ry="3" fill="#3A8C3A" transform="rotate(15 26 50)"/><ellipse cx="19" cy="61" rx="3.5" ry="2.5" fill="#4CAF50" transform="rotate(-10 19 61)" opacity="0.8"/></svg>',
+    '<svg style="position:absolute;top:0;right:0;width:90px;height:80px;pointer-events:none;" viewBox="0 0 90 80"><path d="M90 0 Q70 10 60 25 Q50 38 55 55" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M75 8 Q65 5 62 14" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M63 22 Q71 18 72 28" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="62" cy="13" rx="5" ry="3.5" fill="#4CAF50" transform="rotate(-30 62 13)"/><ellipse cx="71" cy="26" rx="5" ry="3" fill="#2D6A2D" transform="rotate(20 71 26)"/><ellipse cx="54" cy="54" rx="4" ry="2.5" fill="#3A8C3A" transform="rotate(10 54 54)" opacity="0.8"/></svg><svg style="position:absolute;bottom:0;left:0;width:70px;height:60px;pointer-events:none;" viewBox="0 0 70 60"><path d="M0 60 Q15 45 22 30 Q28 18 20 5" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M10 50 Q18 52 17 42" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M20 32 Q12 28 11 38" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="16" cy="43" rx="4.5" ry="3" fill="#3A8C3A" transform="rotate(15 16 43)"/><ellipse cx="12" cy="30" rx="4" ry="3" fill="#4CAF50" transform="rotate(-20 12 30)" opacity="0.9"/><ellipse cx="21" cy="7" rx="3.5" ry="2.5" fill="#2D6A2D" transform="rotate(5 21 7)"/></svg>'
+  ] %} {% set vine_header = '<svg
+  style="position:absolute;top:0;left:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M0 0 Q25 15 30 38 Q34 58 22 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M10 12 Q20 8 19 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M22 34 Q12 30 11 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M24 54 Q33 50 32
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="18" cy="19" rx="6" ry="4"
+  fill="#3A8C3A" transform="rotate(20 18 19)"/><ellipse cx="12" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(-25 12
+  39)"/><ellipse cx="31" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(15 31 60)"/><ellipse cx="23" cy="74" rx="4" ry="2.8"
+  fill="#4CAF50" transform="rotate(-10 23 74)"
+  opacity="0.85"/></svg><svg
+  style="position:absolute;top:0;right:0;width:100px;height:90px;pointer-events:none;"
+  viewBox="0 0 100 90"><path d="M100 0 Q75 15 70 38 Q66 58 78 75"
+  fill="none" stroke="#2D6A2D" stroke-width="2"
+  stroke-linecap="round"/><path d="M90 12 Q80 8 81 20" fill="none"
+  stroke="#2D6A2D" stroke-width="1.3" stroke-linecap="round"/><path
+  d="M78 34 Q88 30 89 42" fill="none" stroke="#2D6A2D"
+  stroke-width="1.3" stroke-linecap="round"/><path d="M76 54 Q67 50 68
+  62" fill="none" stroke="#2D6A2D" stroke-width="1.3"
+  stroke-linecap="round"/><ellipse cx="82" cy="19" rx="6" ry="4"
+  fill="#4CAF50" transform="rotate(-20 82 19)"/><ellipse cx="88" cy="39"
+  rx="5.5" ry="3.5" fill="#2D6A2D" transform="rotate(25 88
+  39)"/><ellipse cx="69" cy="60" rx="5" ry="3.5" fill="#3A8C3A"
+  transform="rotate(-15 69 60)"/><ellipse cx="77" cy="74" rx="4"
+  ry="2.8" fill="#4CAF50" transform="rotate(10 77 74)"
+  opacity="0.85"/></svg>' %}
+
+  <style>
+    .qcard { background: #1A0E06; border: 1px solid #5A3018; border-radius: 14px; overflow: hidden; }
+    .qheader { background: #2C1810; border-bottom: 1px solid #5A3018; padding: 20px 18px 18px; position: relative; overflow: hidden; text-align: center; }
+    .qheader::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #C9860A; }
+    .qheader-icon { font-size: 28px; display: block; margin-bottom: 6px; position: relative; z-index: 1; }
+    .qheader-title { font-size: 15px; font-weight: 500; color: #F5D78E; letter-spacing: 0.04em; position: relative; z-index: 1; }
+    .qheader-sub { font-size: 12px; color: #A07848; margin-top: 4px; position: relative; z-index: 1; }
+    .qgold { position: absolute; top: 12px; left: 14px; z-index: 2; display: flex; align-items: center; gap: 5px; background: #3A1A08; border: 1px solid #C9860A; border-radius: 99px; padding: 4px 10px 4px 7px; }
+    .qgold-icon { font-size: 14px; line-height: 1; }
+    .qgold-amount { font-size: 12px; font-weight: 500; color: #F5D78E; line-height: 1; }
+    .qgold-label { font-size: 9px; color: #A07848; line-height: 1; margin-top: 1px; }
+    .qbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .qdiv { font-size: 11px; text-align: center; color: #6B3D1E; letter-spacing: 6px; margin: 2px 0; }
+    .qi { background: #1E1208; border: 1px solid #5A3018; border-radius: 10px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; position: relative; overflow: hidden; border-left: 3px solid #C9860A; }
+    .qi-urgent { background: #1E1208; border: 1px solid #5A3018; border-radius: 10px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; position: relative; overflow: hidden; border-left: 3px solid #C93030; }
+    .qn { width: 32px; height: 32px; border-radius: 50%; background: #3A1A08; border: 1px solid #8B5A2B; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: #F5D78E; flex-shrink: 0; }
+    .qt { font-size: 13px; font-weight: 500; color: #F0C060; line-height: 1.5; white-space: normal; word-break: break-word; }
+    .qs { font-size: 11px; color: #7A5530; margin-top: 4px; }
+    .qb { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #3A1A08; border: 0.5px solid #8B5A2B; color: #C9860A; display: inline-block; margin-left: 6px; }
+    .qgold-quest { font-size: 10px; color: #C9860A; margin-left: 6px; display: inline-block; }
+    .qtimer { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #1A2E1A; border: 0.5px solid #3A8C3A; color: #4CAF50; display: inline-block; margin-left: 6px; }
+    .qtimer-urgent { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #2E1A1A; border: 0.5px solid #C93030; color: #C93030; display: inline-block; margin-left: 6px; }
+    .qempty { text-align: center; padding: 18px 0 10px; color: #3A8C3A; font-size: 13px; }
+
+    .rpg-dialog { background: #2C1810; border: 2px solid #C9860A; border-radius: 12px; padding: 20px; max-width: 280px; text-align: center; color: #F5D78E; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+    .rpg-dialog::backdrop { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(2px); }
+    .rpg-dialog-text { font-size: 14px; font-weight: 500; margin-bottom: 18px; line-height: 1.4; letter-spacing: 0.02em; }
+    .rpg-dialog-buttons { display: flex; justify-content: center; gap: 14px; }
+    .rpg-btn { padding: 6px 20px; font-size: 12px; font-weight: 500; border-radius: 6px; cursor: pointer; min-width: 70px; background: #3A1A08; border: 1px solid #8B5A2B; color: #F5D78E; }
+    .rpg-btn-yes { border-color: #3A8C3A; color: #4CAF50; background: #1A2E1A; }
+    .rpg-btn-yes:active { background: #254225; }
+    .rpg-btn-no:active { background: #4D250C; }
+  </style>
+
+  <div class="qcard">
+    <div class="qheader">
+      {{ vine_header }}
+      <div class="qgold">
+        <span class="qgold-icon">🪙</span>
+        <div>
+          <div class="qgold-amount">{{ gold }} ₡</div>
+          <div class="qgold-label">gold</div>
+        </div>
+      </div>
+      <span class="qheader-icon">{{ '⚔️' if count > 0 else '🛡️' }}</span>
+      <div class="qheader-title">📜 Active Quests for {{ player_name }}</div>
+      <div class="qheader-sub">
+        {% if count > 0 %}✦ {{ count }} quest{{ 's' if count > 1 else '' }} open ✦{% else %}✦ All quests complete ✦{% endif %}
+      </div>
+    </div>
+    <div class="qbody">
+      {% if quests %}
+        <div class="qdiv">✦ · · · ✦ · · · ✦</div>
+        {% for q in quests %}
+          {% set d = dues[loop.index0] if dues and dues | count > loop.index0 else {'has_due': false, 'timer_text': '', 'urgent': false, 'expired': false, 'diff': 9999999} %}
+          {% set has_due = d.has_due | default(false) %}
+          {% set urgent = d.urgent | default(false) %}
+          {% set expired = d.expired | default(false) %}
+          {% set timer_text = d.timer_text | default('') %}
+          {% set current_roman = roman[loop.index0] if loop.index0 < 10 else loop.index %}
+          {% set short_q = q | regex_replace('\\s*\\(₡\\d+\\)[.!?]*$', '') %}
+          {% set dialog_id = 'rpg_dlg_' ~ loop.index0 %}
+
+        <div class="{{ 'qi-urgent' if urgent else 'qi' }}" onclick="this.querySelector('dialog').showModal();">
+          {{ vines[loop.index0 % 3] }}
+          <div class="qn">{{ current_roman }}</div>
+          <div style="flex:1; min-width:0;">
+            <div class="qt">⚔️ {{ short_q }}</div>
+            <div class="qs">
+              🗡️ Tap to complete
+              <span class="qgold-quest">{% if expired %}₡1{% else %}{{ q | regex_findall('₡\\d+') | first | default('') }}{% endif %}</span>
+              <span class="qb">Complete</span>
+              {% if has_due %}<span class="{{ 'qtimer-urgent' if urgent or expired else 'qtimer' }}">{{ timer_text }}</span>{% endif %}
+            </div>
+          </div>
+
+          <dialog class="rpg-dialog" id="{{ dialog_id }}" onclick="event.stopPropagation();">
+            <div class="rpg-dialog-text">Is quest {{ current_roman }} complete, Adventurer?</div>
+            <div class="rpg-dialog-buttons">
+              <button class="rpg-btn rpg-btn-yes" onclick="event.stopPropagation(); this.closest('dialog').close(); var h=this.getRootNode().host.hass; var i='{{ q | replace("'", "\\'") }}'; var m=i.match(/₡(\d+)/); var g={% if expired %}1{% else %}m?parseInt(m[1]):10{% endif %}; var c=parseFloat(h.states['{{ gold_entity }}'].state)||0; h.callService('number','set_value',{entity_id:'{{ gold_entity }}',value:c+g}); h.callService('todo','remove_item',{entity_id:'{{ quests_todo }}',item:i});">Yes</button>
+              <button class="rpg-btn rpg-btn-no" onclick="event.stopPropagation(); this.closest('dialog').close();">No</button>
+            </div>
+          </dialog>
+        </div>
+        {% endfor %}
+        <div class="qdiv">✦ · · · ✦ · · · ✦</div>
+      {% else %}
+        <div class="qempty">🌿 No quests — rest easy, hero! 🌿</div>
+      {% endif %}
+    </div>
+  </div>
