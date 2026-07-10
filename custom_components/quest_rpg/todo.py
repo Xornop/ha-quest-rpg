@@ -68,6 +68,7 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
         self, entry: ConfigEntry, suffix: str, name: str, icon: str
     ) -> None:
         self._entry = entry
+        self._suffix = suffix
         self._attr_unique_id = f"{entry.entry_id}_{suffix}"
         self._attr_name = name
         self._attr_icon = icon
@@ -116,6 +117,10 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
 
     def _persist(self) -> None:
         self.async_write_ha_state()
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_todo_updated",
+            {"entry_id": self._entry.entry_id, "suffix": self._suffix},
+        )
 
     # -- TodoListEntity API -------------------------------------------------
 
