@@ -8,12 +8,9 @@ from __future__ import annotations
 
 import logging
 import random
-from pathlib import Path
 
 import voluptuous as vol
 
-from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
@@ -73,120 +70,6 @@ from .quest_ai import QuestAiError, generate_quest
 
 _LOGGER = logging.getLogger(__name__)
 
-FRONTEND_URL = "/quest_rpg_frontend/quest-rpg-card.js"
-
-
-async def _async_register_frontend(hass: HomeAssistant) -> None:
-    if hass.data[DOMAIN].get("_frontend_registered"):
-        return
-    hass.data[DOMAIN]["_frontend_registered"] = True
-
-    frontend_path = Path(__file__).parent / "frontend"
-    await hass.http.async_register_static_paths(
-        [
-            # cache_headers=True is safe (and desirable) here because the
-            # URL itself is version-busted below - a browser cache hit on
-            # an old version is impossible, and a cache hit on the current
-            # version means the card loads instantly instead of racing
-            # Lovelace's dashboard rendering on a slow first fetch.
-            StaticPathConfig(
-                "/quest_rpg_frontend", str(frontend_path), cache_headers=True
-            )
-        ]
-    )
-
-    # Cache-bust automatically using the file's mtime, so the browser always
-    # fetches a fresh copy after any update - no manual version bump needed.
-    card_file = frontend_path / "quest-rpg-card.js"
-    version = int(card_file.stat().st_mtime) if card_file.exists() else 0
-    versioned_url = f"{FRONTEND_URL}?v={version}"
-
-    # Primary path: register as a genuine Lovelace dashboard resource. This
-    # is the mechanism every other custom card uses (HACS included), and -
-    # unlike add_extra_js_url - Lovelace's own dashboard rendering awaits
-    # these before creating any card elements, which avoids a "Custom
-    # element not found" race on a slow/first load (seen most often on the
-    # mobile app, or the very first page load before anything is cached).
-    registered_as_resource = await _async_ensure_lovelace_resource(
-        hass, FRONTEND_URL, versioned_url
-    )
-
-    # Fallback / belt-and-suspenders: also inject it the old way. Harmless
-    # if the resource above already covers it - the card's own registration
-    # code no-ops (with a console warning) on a duplicate define().
-    if not registered_as_resource:
-        _LOGGER.warning(
-            "Could not auto-register the Quest RPG dashboard resource "
-            "(Lovelace may be in YAML mode). Add it manually: "
-            "Settings > Dashboards > Resources > Add Resource > "
-            "URL '%s', type 'JavaScript module'.",
-            versioned_url,
-        )
-    add_extra_js_url(hass, versioned_url)
-
-
-async def _async_ensure_lovelace_resource(
-    hass: HomeAssistant, url_prefix: str, versioned_url: str
-) -> bool:
-    """Create or update our Lovelace resource entry. Returns success.
-
-    The internal shape of hass.data for the lovelace integration has
-    changed across HA versions (a plain dict with a "resources" key on
-    older cores, a LovelaceData dataclass with a .resources attribute on
-    newer ones) - handled defensively here since none of this is a stable
-    public API, just the same approach HACS itself uses.
-    """
-    try:
-        from homeassistant.components.lovelace.resources import (
-            ResourceStorageCollection,
-        )
-    except ImportError:
-        return False
-
-    try:
-        from homeassistant.components.lovelace.const import LOVELACE_DATA
-
-        data_key = LOVELACE_DATA
-    except ImportError:
-        data_key = "lovelace"  # older HA cores keyed this as a plain string
-
-    lovelace_data = hass.data.get(data_key)
-    if lovelace_data is None:
-        return False
-
-    resources = (
-        lovelace_data.resources
-        if hasattr(lovelace_data, "resources")
-        else lovelace_data.get("resources")
-        if isinstance(lovelace_data, dict)
-        else None
-    )
-    if not isinstance(resources, ResourceStorageCollection):
-        return False  # YAML mode (or unrecognized shape) - not writable
-
-    try:
-        await resources.async_get_info()  # ensures the collection is loaded
-        existing = next(
-            (
-                item
-                for item in resources.async_items()
-                if item.get("url", "").split("?")[0] == url_prefix
-            ),
-            None,
-        )
-        if existing is None:
-            await resources.async_create_item(
-                {"res_type": "module", "url": versioned_url}
-            )
-        elif existing.get("url") != versioned_url:
-            await resources.async_update_item(
-                existing["id"], {"url": versioned_url}
-            )
-        return True
-    except Exception as err:  # noqa: BLE001 - never block setup on this
-        _LOGGER.warning("Could not auto-register Lovelace resource: %s", err)
-        return False
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
@@ -195,7 +78,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    await _async_register_frontend(hass)
     _async_register_services(hass)
     _schedule_wheel_window(hass, entry)
     return True
