@@ -329,6 +329,22 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
     this._buyLocks = new Set();
   }
 
+  connectedCallback() {
+    // Backstop refresh, same role as the original design's time_pattern
+    // "/5 seconds" trigger: forces a re-render off whatever hass data we
+    // currently have, in case a real change didn't trip our dirty-check.
+    if (!this._pollInterval) {
+      this._pollInterval = setInterval(() => this._forceRender(), 5000);
+    }
+  }
+
+  disconnectedCallback() {
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+      this._pollInterval = null;
+    }
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     const shopEntity = this._entity("shop_entity");
@@ -507,6 +523,19 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
 // Vouchers card
 // ---------------------------------------------------------------------
 class QuestRpgVouchersCard extends QuestRpgBaseCard {
+  connectedCallback() {
+    if (!this._pollInterval) {
+      this._pollInterval = setInterval(() => this._forceRender(), 5000);
+    }
+  }
+
+  disconnectedCallback() {
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+      this._pollInterval = null;
+    }
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     const vouchersEntity = this._entity("vouchers_entity");
