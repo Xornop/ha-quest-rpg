@@ -144,7 +144,7 @@ add_shop_item:
         text:
     emoji:
       name: Emoji
-      description: Optional icon shown for the item, e.g. "🍦"
+      description: Icon shown for the item, e.g. "🍦". Defaults to 🎫 if left empty.
       required: false
       selector:
         text:
