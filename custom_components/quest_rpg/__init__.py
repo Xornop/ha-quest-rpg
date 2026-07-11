@@ -433,12 +433,12 @@ def _async_register_services(hass: HomeAssistant) -> None:
     async def handle_add_shop_item(call: ServiceCall) -> None:
         entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
         name = call.data[ATTR_ITEM_NAME].strip()
-        emoji = (call.data.get(ATTR_ITEM_EMOJI) or "").strip()
+        emoji = (call.data.get(ATTR_ITEM_EMOJI) or "").strip() or "🎫"
         price = int(call.data[ATTR_ITEM_PRICE])
         stock = call.data.get(ATTR_ITEM_STOCK)
         stock = int(stock) if stock not in (None, "") else None
 
-        display_name = f"{emoji} {name}".strip() if emoji else name
+        display_name = f"{emoji} {name}".strip()
         item_text = with_stock(display_name, price, stock)
         _todo(hass, entry_id, SUFFIX_SHOP_ITEMS).add_text_item(item_text)
 
