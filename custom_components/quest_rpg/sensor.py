@@ -6,7 +6,6 @@ quest sensor, `due`) attribute.
 """
 from __future__ import annotations
 
-import logging
 from datetime import timedelta
 
 from homeassistant.components.sensor import SensorEntity
@@ -31,8 +30,6 @@ from .const import (
     SUFFIX_VOUCHERS,
 )
 from .helpers import due_info
-
-_LOGGER = logging.getLogger(__name__)
 
 REFRESH_INTERVAL = timedelta(seconds=30)
 
@@ -85,19 +82,10 @@ class _BaseListSensor(SensorEntity):
         self._recompute()
 
         source = self._source_entity()
-        _LOGGER.warning(
-            "[quest-rpg-debug] %s: async_added_to_hass, source=%s (suffix=%s)",
-            self.entity_id,
-            source.entity_id if source else None,
-            self._source_suffix,
-        )
         if source is not None and source.entity_id:
 
             @callback
             def _on_source_update(_event=None) -> None:
-                _LOGGER.warning(
-                    "[quest-rpg-debug] %s: state_changed listener fired", self.entity_id
-                )
                 self._recompute()
                 self.async_write_ha_state()
 
@@ -113,11 +101,6 @@ class _BaseListSensor(SensorEntity):
                 return
             if event.data.get("suffix") != self._source_suffix:
                 return
-            _LOGGER.warning(
-                "[quest-rpg-debug] %s: todo_updated listener fired (matched suffix=%s)",
-                self.entity_id,
-                self._source_suffix,
-            )
             self._recompute()
             self.async_write_ha_state()
 
@@ -133,7 +116,6 @@ class _BaseListSensor(SensorEntity):
 
     @callback
     def _interval_refresh(self, _now) -> None:
-        _LOGGER.warning("[quest-rpg-debug] %s: 30s interval poll fired", self.entity_id)
         self._recompute()
         self.async_write_ha_state()
 
