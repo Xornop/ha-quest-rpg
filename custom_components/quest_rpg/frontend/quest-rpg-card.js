@@ -739,8 +739,8 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
         ${THEME}
         .wheel-container { position: relative; width: 220px; height: 220px; margin: 30px auto 16px; }
         .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #C9860A; box-sizing: border-box; background: #2C1810; transition: transform 4.5s cubic-bezier(0.08,0.85,0.25,1); }
-        .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid #D4AF37; }
-        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; background: #D4AF37; border: 3px solid #1A0E06; border-radius: 50%; }
+        .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid #D4AF37; z-index: 10; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; background: #D4AF37; border: 3px solid #1A0E06; border-radius: 50%; z-index: 5; }
         .wheel-result { margin-top: 12px; height: 22px; font-size: 14px; color: #F5D78E; text-align: center; }
         .wheel-btn { display: block; margin: 8px auto 4px; background: #2D6A2D; border: 1px solid #4CAF50; border-radius: 10px; color: white; padding: 10px 22px; font-weight: bold; cursor: pointer; }
         .wheel-btn:disabled { opacity: 0.4; cursor: not-allowed; background: #2C1810; border-color: #5A3018; }
