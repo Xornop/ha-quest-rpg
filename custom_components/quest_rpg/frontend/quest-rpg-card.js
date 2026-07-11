@@ -113,13 +113,7 @@ class QuestRpgBaseCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     const sig = this._signature();
-    const changed = sig !== this._lastSig;
-    if (this.tagName === "QUEST-RPG-SHOP-CARD" || this.tagName === "QUEST-RPG-VOUCHERS-CARD") {
-      console.info(
-        `[quest-rpg-debug] ${this.tagName} set hass() @ ${new Date().toISOString()} - signature changed: ${changed}`
-      );
-    }
-    if (!changed) return; // nothing we care about changed - don't touch the DOM
+    if (sig === this._lastSig) return; // nothing we care about changed - don't touch the DOM
     this._lastSig = sig;
     this._forceRender();
   }
@@ -330,11 +324,6 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
 // Shop card
 // ---------------------------------------------------------------------
 class QuestRpgShopCard extends QuestRpgBaseCard {
-  constructor() {
-    super();
-    this._buyLocks = new Set();
-  }
-
   connectedCallback() {
     // Backstop refresh, same role as the original design's time_pattern
     // "/5 seconds" trigger: forces a re-render off whatever hass data we
@@ -357,10 +346,6 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
     const goldEntity = this._entity("gold_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : 0;
     const items = (shopEntity && shopEntity.attributes.quests) || [];
-    console.info(
-      `[quest-rpg-debug] ShopCard _render() @ ${new Date().toISOString()} - items:`,
-      JSON.stringify(items)
-    );
     const entryId = this._entryId(shopEntity, goldEntity);
 
     const enriched = items.map((item) => {
@@ -368,15 +353,13 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
       const stock = stockOf(item);
       const outofstock = stock !== null && stock <= 0;
       const cantafford = gold < prijs;
-      const locked = this._buyLocks.has(item);
       return {
         item,
         prijs,
         stock,
         outofstock,
         cantafford,
-        locked,
-        disabled: outofstock || cantafford || locked,
+        disabled: outofstock || cantafford,
       };
     });
     enriched.sort((a, b) => {
@@ -399,11 +382,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
               : e.stock === null
               ? `<span class="qr-b">∞</span>`
               : `<span class="qr-b">${e.stock} available</span>`;
-            const buyBadge = e.locked
-              ? `<span class="qr-b qr-buy-badge">⏳ Buying...</span>`
-              : !e.disabled
-              ? `<span class="qr-b qr-buy-badge">🛒 Buy</span>`
-              : "";
+            const buyBadge = !e.disabled ? `<span class="qr-b qr-buy-badge">🛒 Buy</span>` : "";
             return `
               <div class="qr-item ${e.disabled ? "disabled" : ""}" data-idx="${i}">
                 ${VINES[i % 3]}
@@ -425,12 +404,11 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
       el.addEventListener("click", () => {
         const i = parseInt(el.dataset.idx, 10);
         const itemText = enriched[i].item;
-        if (this._buyLocks.has(itemText)) return;
 
-        this._buyLocks.add(itemText);
-        setTimeout(() => this._buyLocks.delete(itemText), 5000);
-
-        // Reflect the lock immediately, don't wait for hass to push new state.
+        // Prevent a double-tap in the brief moment before fresh data
+        // lands - no artificial delay beyond that, real-time updates
+        // (via the backend's change event) handle the rest.
+        if (el.classList.contains("disabled")) return;
         el.classList.add("disabled");
         const badge = el.querySelector(".qr-buy-badge");
         if (badge) badge.textContent = "⏳ Buying...";
@@ -454,7 +432,7 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
 
     const body = `
       <div class="qr-shopadmin-form">
-        <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎁" maxlength="8" />
+        <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
         <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
         <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
         <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
