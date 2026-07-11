@@ -53,8 +53,10 @@ from .const import (
     SERVICE_BUY_ITEM,
     SERVICE_COMPLETE_QUEST,
     SERVICE_REDEEM_VOUCHER,
+    SERVICE_REMOVE_SHOP_ITEM,
     SERVICE_SELL_VOUCHER,
     SERVICE_SPIN_WHEEL,
+    SERVICE_UPDATE_SHOP_ITEM,
     SUFFIX_GOLD,
     SUFFIX_QUESTS,
     SUFFIX_SHOP_ITEMS,
@@ -433,14 +435,31 @@ def _async_register_services(hass: HomeAssistant) -> None:
     async def handle_add_shop_item(call: ServiceCall) -> None:
         entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
         name = call.data[ATTR_ITEM_NAME].strip()
-        emoji = (call.data.get(ATTR_ITEM_EMOJI) or "").strip()
+        emoji = (call.data.get(ATTR_ITEM_EMOJI) or "").strip() or "🎫"
         price = int(call.data[ATTR_ITEM_PRICE])
         stock = call.data.get(ATTR_ITEM_STOCK)
         stock = int(stock) if stock not in (None, "") else None
 
-        display_name = f"{emoji} {name}".strip() if emoji else name
+        display_name = f"{emoji} {name}".strip()
         item_text = with_stock(display_name, price, stock)
         _todo(hass, entry_id, SUFFIX_SHOP_ITEMS).add_text_item(item_text)
+
+    async def handle_remove_shop_item(call: ServiceCall) -> None:
+        entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
+        item_text = call.data[ATTR_ITEM_TEXT]
+        _todo(hass, entry_id, SUFFIX_SHOP_ITEMS).remove_text_item(item_text)
+
+    async def handle_update_shop_item(call: ServiceCall) -> None:
+        entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
+        item_text = call.data[ATTR_ITEM_TEXT]
+        price = int(call.data[ATTR_ITEM_PRICE])
+        stock = call.data.get(ATTR_ITEM_STOCK)
+        stock = int(stock) if stock not in (None, "") else None
+
+        shop_entity = _todo(hass, entry_id, SUFFIX_SHOP_ITEMS)
+        name = strip_price_and_stock(item_text)
+        new_text = with_stock(name, price, stock)
+        shop_entity.rename_text_item(item_text, new_text)
 
     entry_id_schema = {vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string}
 
@@ -507,6 +526,25 @@ def _async_register_services(hass: HomeAssistant) -> None:
                 **entry_id_schema,
                 vol.Required(ATTR_ITEM_NAME): cv.string,
                 vol.Optional(ATTR_ITEM_EMOJI, default=""): cv.string,
+                vol.Required(ATTR_ITEM_PRICE): vol.Coerce(int),
+                vol.Optional(ATTR_ITEM_STOCK): vol.Any(vol.Coerce(int), None, ""),
+            }
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_SHOP_ITEM,
+        handle_remove_shop_item,
+        schema=vol.Schema({**entry_id_schema, vol.Required(ATTR_ITEM_TEXT): cv.string}),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_SHOP_ITEM,
+        handle_update_shop_item,
+        schema=vol.Schema(
+            {
+                **entry_id_schema,
+                vol.Required(ATTR_ITEM_TEXT): cv.string,
                 vol.Required(ATTR_ITEM_PRICE): vol.Coerce(int),
                 vol.Optional(ATTR_ITEM_STOCK): vol.Any(vol.Coerce(int), None, ""),
             }

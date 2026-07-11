@@ -144,13 +144,64 @@ add_shop_item:
         text:
     emoji:
       name: Emoji
-      description: Optional icon shown for the item, e.g. "🍦"
+      description: Icon shown for the item, e.g. "🍦". Defaults to 🎫 if left empty.
       required: false
       selector:
         text:
     price:
       name: Price
       description: Cost in gold.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 999999
+          mode: box
+    stock:
+      name: Stock
+      description: Leave empty for unlimited stock.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 999999
+          mode: box
+
+remove_shop_item:
+  name: Remove shop item
+  description: Removes an item from the player's reward shop.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    item_text:
+      name: Item text
+      description: The exact shop item text as shown on the shop sensor.
+      required: true
+      selector:
+        text:
+
+update_shop_item:
+  name: Update shop item
+  description: Changes the price and/or stock of an existing shop item.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    item_text:
+      name: Item text
+      description: The exact shop item text as shown on the shop sensor.
+      required: true
+      selector:
+        text:
+    price:
+      name: Price
       required: true
       selector:
         number:

@@ -46,6 +46,8 @@ SERVICE_SELL_VOUCHER = "sell_voucher"
 SERVICE_REDEEM_VOUCHER = "redeem_voucher"
 SERVICE_ADD_GOLD = "add_gold"
 SERVICE_ADD_SHOP_ITEM = "add_shop_item"
+SERVICE_REMOVE_SHOP_ITEM = "remove_shop_item"
+SERVICE_UPDATE_SHOP_ITEM = "update_shop_item"
 
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_QUEST_TEXT = "quest_text"

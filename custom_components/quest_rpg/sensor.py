@@ -95,6 +95,19 @@ class _BaseListSensor(SensorEntity):
                 )
             )
 
+        @callback
+        def _on_todo_updated(event) -> None:
+            if event.data.get("entry_id") != self._entry.entry_id:
+                return
+            if event.data.get("suffix") != self._source_suffix:
+                return
+            self._recompute()
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_todo_updated", _on_todo_updated)
+        )
+
         self.async_on_remove(
             async_track_time_interval(
                 self.hass, self._interval_refresh, REFRESH_INTERVAL
