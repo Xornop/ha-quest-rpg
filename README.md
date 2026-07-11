@@ -93,8 +93,8 @@ For a player named "Johnny":
   card, or edit directly as `<emoji> <name> (₡price) (stock)`, e.g.
   `🍦 Ice cream trip (₡40) (2)`; blank/`(∞)` stock = unlimited
 - `todo.quest_rpg_johnny_vouchers`
-- `sensor.quest_rpg_johnny_quests_attributes` /
-  `..._shop_items_attributes` / `..._vouchers_attributes` - what the cards
+- `sensor.quest_rpg_johnny_quests` /
+  `..._shop_items` / `..._vouchers` - what the cards
   read from
 
 ## Dashboard cards
@@ -112,18 +112,18 @@ Add these anywhere in your dashboard (`type: custom:...`):
 ```yaml
 type: custom:quest-rpg-quests-card
 gold_entity: number.quest_rpg_johnny_gold
-quests_entity: sensor.quest_rpg_johnny_quests_attributes
+quests_entity: sensor.quest_rpg_johnny_quests
 
 type: custom:quest-rpg-shop-card
 gold_entity: number.quest_rpg_johnny_gold
-shop_entity: sensor.quest_rpg_johnny_shop_items_attributes
+shop_entity: sensor.quest_rpg_johnny_shop_items
 
 type: custom:quest-rpg-shop-admin-card
-shop_entity: sensor.quest_rpg_johnny_shop_items_attributes
+shop_entity: sensor.quest_rpg_johnny_shop_items
 gold_entity: number.quest_rpg_johnny_gold
 
 type: custom:quest-rpg-vouchers-card
-vouchers_entity: sensor.quest_rpg_johnny_vouchers_attributes
+vouchers_entity: sensor.quest_rpg_johnny_vouchers
 # admin: true   # shows "Redeem" + sells back at full price instead of half
 
 type: custom:quest-rpg-wheel-card
@@ -157,7 +157,7 @@ filtered to your own HA user:
 
 ```yaml
 type: custom:quest-rpg-shop-admin-card
-shop_entity: sensor.quest_rpg_johnny_shop_items_attributes
+shop_entity: sensor.quest_rpg_johnny_shop_items
 gold_entity: number.quest_rpg_johnny_gold
 visibility:
   - condition: user
@@ -165,7 +165,7 @@ visibility:
       - <your Home Assistant user id>
 
 type: custom:quest-rpg-vouchers-card
-vouchers_entity: sensor.quest_rpg_johnny_vouchers_attributes
+vouchers_entity: sensor.quest_rpg_johnny_vouchers
 admin: true
 visibility:
   - condition: user
