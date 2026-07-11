@@ -12,7 +12,6 @@ so nothing needs a separate database or YAML file.
 """
 from __future__ import annotations
 
-import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -36,8 +35,6 @@ from .const import (
     SUFFIX_SHOP_ITEMS,
     SUFFIX_VOUCHERS,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 SUPPORTED_FEATURES = (
     TodoListEntityFeature.CREATE_TODO_ITEM
@@ -120,12 +117,6 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
 
     def _persist(self) -> None:
         self.async_write_ha_state()
-        _LOGGER.warning(
-            "[quest-rpg-debug] %s: firing todo_updated (suffix=%s, items=%d)",
-            self.entity_id,
-            self._suffix,
-            len(self._attr_todo_items or []),
-        )
         self.hass.bus.async_fire(
             f"{DOMAIN}_todo_updated",
             {"entry_id": self._entry.entry_id, "suffix": self._suffix},
@@ -181,9 +172,12 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
         return item
 
     def remove_text_item(self, text: str) -> None:
-        self._attr_todo_items = [
-            i for i in (self._attr_todo_items or []) if i.summary != text
-        ]
+        items = list(self._attr_todo_items or [])
+        for idx, existing in enumerate(items):
+            if existing.summary == text:
+                del items[idx]
+                break
+        self._attr_todo_items = items
         self._persist()
 
     def rename_text_item(self, old_text: str, new_text: str) -> None:
