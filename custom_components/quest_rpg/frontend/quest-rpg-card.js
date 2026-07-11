@@ -113,7 +113,13 @@ class QuestRpgBaseCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     const sig = this._signature();
-    if (sig === this._lastSig) return; // nothing we care about changed - don't touch the DOM
+    const changed = sig !== this._lastSig;
+    if (this.tagName === "QUEST-RPG-SHOP-CARD" || this.tagName === "QUEST-RPG-VOUCHERS-CARD") {
+      console.info(
+        `[quest-rpg-debug] ${this.tagName} set hass() @ ${new Date().toISOString()} - signature changed: ${changed}`
+      );
+    }
+    if (!changed) return; // nothing we care about changed - don't touch the DOM
     this._lastSig = sig;
     this._forceRender();
   }
@@ -351,6 +357,10 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
     const goldEntity = this._entity("gold_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : 0;
     const items = (shopEntity && shopEntity.attributes.quests) || [];
+    console.info(
+      `[quest-rpg-debug] ShopCard _render() @ ${new Date().toISOString()} - items:`,
+      JSON.stringify(items)
+    );
     const entryId = this._entryId(shopEntity, goldEntity);
 
     const enriched = items.map((item) => {
