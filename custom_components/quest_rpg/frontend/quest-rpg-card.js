@@ -49,6 +49,7 @@ const THEME = `
   .qr-shopadmin-emoji { flex: 0 0 56px; text-align: center; }
   .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
   .qr-shopadmin-num { flex: 0 0 110px; }
+  .qr-shopadmin-rownum { flex: 0 0 60px; padding: 4px 6px; font-size: 11px; }
 `;
 
 const VINE_HEADER =
@@ -423,12 +424,36 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
 }
 
 // ---------------------------------------------------------------------
-// Shop admin card - add new items to the reward shop
+// Shop admin card - add, edit, and remove reward shop items
 // ---------------------------------------------------------------------
 class QuestRpgShopAdminCard extends QuestRpgBaseCard {
   _render() {
     if (!this._hass || !this._config) return;
-    const entryId = this._entryId(this._entity("shop_entity"), this._entity("gold_entity"));
+    const shopEntity = this._entity("shop_entity");
+    const entryId = this._entryId(shopEntity, this._entity("gold_entity"));
+    const items = (shopEntity && shopEntity.attributes.quests) || [];
+
+    const listRows = items
+      .map((item, i) => {
+        const naam = nameOnly(item);
+        const prijs = priceOf(item);
+        const stock = stockOf(item);
+        return `
+          <div class="qr-item" data-idx="${i}" style="cursor:default;">
+            ${VINES[i % 3]}
+            <div class="qr-n">${firstWord(naam)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="qr-t">${restWords(naam)}</div>
+              <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+                ₡<input id="rowPrice-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
+                <input id="rowStock-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
+                <button class="qr-btn qr-shopadmin-save" data-idx="${i}">💾</button>
+                <button class="qr-btn qr-btn-sell qr-shopadmin-del" data-idx="${i}">✕</button>
+              </div>
+            </div>
+          </div>`;
+      })
+      .join("");
 
     const body = `
       <div class="qr-shopadmin-form">
@@ -439,12 +464,14 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       </div>
       <button id="addItemBtn" class="qr-add-btn" style="width:100%; padding: 8px 0;">➕ Add item to shop</button>
       <div id="shopAdminMsg" class="qr-s" style="margin-top:6px; text-align:center;"></div>
+      <div class="qr-div">✦ · · · ✦ · · · ✦</div>
+      ${items.length ? listRows : `<div class="qr-empty">🌿 No items in the shop yet</div>`}
     `;
 
     this.shadowRoot.innerHTML = this._shell(
       "🧰",
       "🛠️ Shop Management",
-      "✦ Add new reward shop items ✦",
+      "✦ Add, edit, or remove reward shop items ✦",
       null,
       body
     );
@@ -502,6 +529,57 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     [nameInput, emojiInput, priceInput, stockInput].forEach((el) => {
       el.addEventListener("keydown", (ev) => {
         if (ev.key === "Enter") submit();
+      });
+    });
+
+    this.shadowRoot.querySelectorAll(".qr-shopadmin-save").forEach((saveBtn) => {
+      saveBtn.addEventListener("click", () => {
+        const i = parseInt(saveBtn.dataset.idx, 10);
+        const itemText = items[i];
+        const priceEl = this.shadowRoot.getElementById(`rowPrice-${i}`);
+        const stockEl = this.shadowRoot.getElementById(`rowStock-${i}`);
+        const price = parseInt(priceEl.value, 10);
+        if (!price || price <= 0) {
+          msg.textContent = "⚠️ Price must be a positive number.";
+          return;
+        }
+        const data = { config_entry_id: entryId, item_text: itemText, price };
+        const stockRaw = stockEl.value.trim();
+        if (stockRaw !== "") data.stock = parseInt(stockRaw, 10);
+
+        saveBtn.disabled = true;
+        this._hass
+          .callService("quest_rpg", "update_shop_item", data)
+          .then(() => {
+            msg.textContent = "✅ Updated.";
+          })
+          .catch((err) => {
+            console.error("[quest-rpg] update_shop_item FAILED:", err);
+            msg.textContent = `❌ Could not update item: ${err && err.message ? err.message : err}`;
+          })
+          .finally(() => {
+            saveBtn.disabled = false;
+          });
+      });
+    });
+
+    this.shadowRoot.querySelectorAll(".qr-shopadmin-del").forEach((delBtn) => {
+      delBtn.addEventListener("click", () => {
+        const i = parseInt(delBtn.dataset.idx, 10);
+        const itemText = items[i];
+        if (!confirm(`Remove "${nameOnly(itemText)}" from the shop?`)) return;
+
+        delBtn.disabled = true;
+        this._hass
+          .callService("quest_rpg", "remove_shop_item", {
+            config_entry_id: entryId,
+            item_text: itemText,
+          })
+          .catch((err) => {
+            console.error("[quest-rpg] remove_shop_item FAILED:", err);
+            msg.textContent = `❌ Could not remove item: ${err && err.message ? err.message : err}`;
+            delBtn.disabled = false;
+          });
       });
     });
   }
@@ -660,7 +738,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
       <style>
         ${THEME}
         .wheel-container { position: relative; width: 220px; height: 220px; margin: 30px auto 16px; }
-        .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #C9860A; background: #2C1810; transition: transform 4.5s cubic-bezier(0.08,0.85,0.25,1); }
+        .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #C9860A; box-sizing: border-box; background: #2C1810; transition: transform 4.5s cubic-bezier(0.08,0.85,0.25,1); }
         .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid #D4AF37; }
         .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; background: #D4AF37; border: 3px solid #1A0E06; border-radius: 50%; }
         .wheel-result { margin-top: 12px; height: 22px; font-size: 14px; color: #F5D78E; text-align: center; }
