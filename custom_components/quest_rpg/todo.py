@@ -12,6 +12,7 @@ so nothing needs a separate database or YAML file.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -35,6 +36,8 @@ from .const import (
     SUFFIX_SHOP_ITEMS,
     SUFFIX_VOUCHERS,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 SUPPORTED_FEATURES = (
     TodoListEntityFeature.CREATE_TODO_ITEM
@@ -68,6 +71,7 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
         self, entry: ConfigEntry, suffix: str, name: str, icon: str
     ) -> None:
         self._entry = entry
+        self._suffix = suffix
         self._attr_unique_id = f"{entry.entry_id}_{suffix}"
         self._attr_name = name
         self._attr_icon = icon
@@ -116,6 +120,16 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
 
     def _persist(self) -> None:
         self.async_write_ha_state()
+        _LOGGER.warning(
+            "[quest-rpg-debug] %s: firing todo_updated (suffix=%s, items=%d)",
+            self.entity_id,
+            self._suffix,
+            len(self._attr_todo_items or []),
+        )
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_todo_updated",
+            {"entry_id": self._entry.entry_id, "suffix": self._suffix},
+        )
 
     # -- TodoListEntity API -------------------------------------------------
 
