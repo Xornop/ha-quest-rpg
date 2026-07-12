@@ -19,7 +19,9 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .const import (
     CONF_AI_TASK_ENTITY_ID,
     CONF_PLAYER_NAME,
+    CONF_QUEST_CUSTOM_INSTRUCTIONS,
     CONF_QUEST_LANGUAGE,
+    DEFAULT_QUEST_CUSTOM_INSTRUCTIONS,
     DEFAULT_QUEST_LANGUAGE,
     DOMAIN,
     SUFFIX_NEW_TASK,
@@ -77,6 +79,9 @@ class NewTaskTextEntity(TextEntity, RestoreEntity):
                 self._entry.options.get(CONF_AI_TASK_ENTITY_ID) or None,
                 self._entry.options.get(
                     CONF_QUEST_LANGUAGE, DEFAULT_QUEST_LANGUAGE
+                ),
+                self._entry.options.get(
+                    CONF_QUEST_CUSTOM_INSTRUCTIONS, DEFAULT_QUEST_CUSTOM_INSTRUCTIONS
                 ),
             )
             quests_entity = self.hass.data[DOMAIN][self._entry.entry_id][
