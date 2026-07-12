@@ -67,6 +67,7 @@ from .const import (
 )
 from .helpers import (
     bump_stock,
+    due_info,
     extract_price,
     extract_stock,
     strip_price_and_stock,
@@ -333,6 +334,14 @@ def _async_register_services(hass: HomeAssistant) -> None:
         quests_entity = _todo(hass, entry_id, SUFFIX_QUESTS)
 
         reward = extract_price(quest_text) or 10
+        # Match the card's display: an expired quest only pays out 1 gold,
+        # regardless of the reward encoded in its text.
+        item = next(
+            (i for i in quests_entity.items if i.summary == quest_text), None
+        )
+        if item is not None and due_info(item.due, dt_util.now())["expired"]:
+            reward = 1
+
         quests_entity.remove_text_item(quest_text)
         await _add_gold(hass, entry_id, reward)
 
