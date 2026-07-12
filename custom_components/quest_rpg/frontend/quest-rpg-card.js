@@ -857,7 +857,13 @@ for (const [tag, cls, name, description] of QUEST_RPG_CARDS) {
 
 // Sanity check: prove to ourselves (and the console) whether the tags are
 // actually resolvable via the registry Home Assistant itself will query.
-for (const [tag] of QUEST_RPG_CARDS) {
-  const resolved = window.customElements.get(tag);
-  console.info(`[quest-rpg] post-registration check - customElements.get('${tag}') ->`, resolved);
-}
+window.setTimeout(() => {
+  for (const [tag, cls, name, description] of QUEST_RPG_CARDS) {
+    if (!window.customElements.get(tag)) {
+      window.customElements.define(tag, cls);
+    }
+    if (!window.customCards.find(c => c.type === tag)) {
+      window.customCards.push({ type: tag, name, description });
+    }
+  }
+}, 100);
