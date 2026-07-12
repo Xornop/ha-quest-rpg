@@ -67,6 +67,7 @@ When you add the integration you'll be asked for:
 | Player name | Anything - becomes the device/entity names, e.g. "Johnny" |
 | AI Task entity | **Required.** Which AI Task entity generates this player's quests. |
 | Quest language | Language quest text should be generated in (default: English) |
+| Custom prompt | Add a custom prompt within the default prompt to adjust the task output. E.g. "use simple language a 4 year old would understand" |
 | Wheel spin cost | Gold cost per spin (default: 10) |
 | Max wheel spins per day | How many spins are allowed inside the window (default: 3) |
 | Wheel available from / until | Daily time window the wheel can be spun in (default: 18:30-19:30) |
@@ -178,21 +179,85 @@ the player's own view instead. You can find a user's ID under
 **Settings → People → (user) → Advanced** (with Advanced Mode enabled on
 your own profile).
 
+## Tips
+
+<details>
+<summary>The full prompt:</summary>
+
+```
+INSTRUCTIONS_TEMPLATE = """You are a fairytale/RPG narrator. Rewrite the \
+following everyday household task as a short, atmospheric RPG quest for an \
+adventurer.
+
+Rules for the quest text:
+- One sentence at most.
+- The concrete action must stay crystal clear - don't hide it behind vague \
+metaphors.
+- Vary the tone: sometimes a dangerous adventure, sometimes a royal duty, \
+sometimes a friendly favour.
+- Assign a fair gold reward between 1 and 100, based on how tedious or \
+time-consuming the task is. If the task already mentions a point or gold \
+amount, use that instead.
+- Write the quest text in {language}.
+- The reward MUST be the very last thing in the string, formatted exactly \
+as "(₡N)" with N a whole number. Do not add a period, exclamation mark, or \
+any other character after the closing parenthesis - it must be the last \
+character of the string.
+
+Rules for the deadline:
+- Look for time references in the task (e.g. "before 10am", "today", \
+"tomorrow at 2pm", "within 2 hours").
+- Work out the exact target time based on the current time: {now}.
+- If there is no specific time or deadline mentioned, leave the deadline \
+empty.
+
+Task: {task}"""
+
+STRUCTURE = {
+    "quest": {
+        "selector": {"text": {}},
+        "description": (
+            "The rewritten quest text. It MUST end with the gold reward "
+            "formatted exactly as (₡N), e.g. 'Slay the dust-dragon under "
+            "the bed (₡15)' - the closing parenthesis must be the very "
+            "last character, no trailing period or other punctuation."
+        ),
+        "required": True,
+    },
+    "due": {
+        "selector": {"text": {}},
+        "description": (
+            "ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS) for the deadline, or "
+            "an empty string if the task has no deadline."
+        ),
+        "required": False,
+    },
+}
+```
+</details>details>
+
+- When adding a task, you can add a time frame by simply typing it in natural
+  language. E.g. "clean your room before tomorrow 8 am". The quest will be added
+  with a timer. When the timer runs out, the value of the task drops to 1. The
+  task can then still be completed in exchange for this minimum amount of coins.
+- Add two cards to the dashboard: one task list with `hide_new_task: true` with the
+  `visibility`  set only for the admin, and one task list without `hide_new_task:`
+  with the `visibility` set for the player. That way, only the admin can add tasks.
+
 ## Services
 
-Every card action goes through a service call - no direct entity mutation,
-one source of truth in Python. Also usable from your own automations:
+This integration comes with the following new actions:
 
-- `quest_rpg.add_task` - `config_entry_id`, `task_text` → AI-generate a quest
-- `quest_rpg.complete_quest` - `config_entry_id`, `quest_text` → pay out + remove
-- `quest_rpg.spin_wheel` - `config_entry_id`
-- `quest_rpg.buy_item` - `config_entry_id`, `item_text`
+- `quest_rpg.add_task` - `config_entry_id`, `task_text` → AI-generate a quest and add to task list
+- `quest_rpg.complete_quest` - `config_entry_id`, `quest_text` → pay out + remove quest
+- `quest_rpg.spin_wheel` - `config_entry_id` → spin the wheel + pay out an amount of coins
+- `quest_rpg.buy_item` - `config_entry_id`, `item_text` → buy an item + remove an amount of coins
 - `quest_rpg.sell_voucher` - `config_entry_id`, `voucher_text`, `full_refund?` (default false → 50%, true → 100%)
 - `quest_rpg.redeem_voucher` - `config_entry_id`, `voucher_text` (no refund - reward already handed over)
 - `quest_rpg.add_gold` - `config_entry_id`, `amount` (can be negative)
 - `quest_rpg.add_shop_item` - `config_entry_id`, `name`, `emoji?` (defaults to 🎫), `price`, `stock?` (blank = unlimited)
-- `quest_rpg.remove_shop_item` - `config_entry_id`, `item_text`
-- `quest_rpg.update_shop_item` - `config_entry_id`, `item_text`, `price`, `stock?`
+- `quest_rpg.remove_shop_item` - `config_entry_id`, `item_text` → delete an item from the shop
+- `quest_rpg.update_shop_item` - `config_entry_id`, `item_text`, `price`, `stock?` → change the price and stock of a shop item
 
 ## License
 
