@@ -15,35 +15,185 @@
  * optional manual override.
  */
 
+const THEME_PALETTES = {
+  default: {
+    bg: "#1A0E06",
+    border: "#5A3018",
+    headerBg: "#2C1810",
+    accent: "#C9860A",
+    accentText: "#F5D78E",
+    subText: "#A07848",
+    itemBg: "#1E1208",
+    itemBorder: "#5A3018",
+    itemText: "#F0C060",
+    itemSubText: "#7A5530",
+    badgeBg: "#3A1A08",
+    badgeBorder: "#8B5A2B",
+    badgeText: "#C9860A",
+    urgentBorder: "#C93030",
+    urgentBg: "#2E1A1A",
+    urgentText: "#C93030",
+    outOfStockBg: "#2E1010",
+    outOfStockBorder: "#C93030",
+    outOfStockText: "#C93030",
+    timerBg: "#1A2E1A",
+    timerBorder: "#3A8C3A",
+    timerText: "#4CAF50",
+    divColor: "#6B3D1E",
+    emptyText: "#3A8C3A",
+    btnBg: "#1A2E1A",
+    btnBorder: "#3A8C3A",
+    btnText: "#4CAF50",
+    btnSellBg: "#3A1A08",
+    btnSellBorder: "#8B5A2B",
+    btnSellText: "#C9860A",
+    addBtnBg: "#C9860A",
+    addBtnText: "#1A0E06",
+    inputBg: "#1E1208",
+    inputBorder: "#5A3018",
+    inputText: "#F0C060",
+    placeholderText: "#7A5530",
+    wheelBorder: "#C9860A",
+    wheelBg: "#2C1810",
+    wheelPointer: "#D4AF37",
+    wheelCenterBg: "#D4AF37",
+    wheelCenterBorder: "#1A0E06",
+    wheelResultText: "#F5D78E",
+    wheelBtnBg: "#2D6A2D",
+    wheelBtnBorder: "#4CAF50",
+    wheelBtnDisabledBg: "#2C1810",
+    wheelBtnDisabledBorder: "#5A3018",
+    wheelTextFill: "#F5D78E",
+    wheelSegments: ["#3A1A08", "#5A3018", "#2D6A2D", "#1E4620", "#C9860A", "#D4AF37"],
+  },
+  pink: {
+    bg: "#FFF3F8",
+    border: "#F3B8D6",
+    headerBg: "#FCE4F0",
+    accent: "#E85FA6",
+    accentText: "#8C2F63",
+    subText: "#B0709A",
+    itemBg: "#FFFAFC",
+    itemBorder: "#F3C7DF",
+    itemText: "#7A2E55",
+    itemSubText: "#B0709A",
+    badgeBg: "#FBDCEC",
+    badgeBorder: "#EFA9CD",
+    badgeText: "#B03D80",
+    urgentBorder: "#E14C86",
+    urgentBg: "#FDE3ED",
+    urgentText: "#C6316E",
+    outOfStockBg: "#FDE3ED",
+    outOfStockBorder: "#E14C86",
+    outOfStockText: "#C6316E",
+    timerBg: "#E9FBF0",
+    timerBorder: "#8FD9AE",
+    timerText: "#2E9E5B",
+    divColor: "#EFAAD0",
+    emptyText: "#C67AAE",
+    btnBg: "#E9FBF0",
+    btnBorder: "#8FD9AE",
+    btnText: "#2E9E5B",
+    btnSellBg: "#FBDCEC",
+    btnSellBorder: "#EFA9CD",
+    btnSellText: "#B03D80",
+    addBtnBg: "#E85FA6",
+    addBtnText: "#FFFFFF",
+    inputBg: "#FFFAFC",
+    inputBorder: "#F3C7DF",
+    inputText: "#7A2E55",
+    placeholderText: "#CB9AB6",
+    wheelBorder: "#E85FA6",
+    wheelBg: "#FCE4F0",
+    wheelPointer: "#E85FA6",
+    wheelCenterBg: "#E85FA6",
+    wheelCenterBorder: "#FFF3F8",
+    wheelResultText: "#8C2F63",
+    wheelBtnBg: "#E85FA6",
+    wheelBtnBorder: "#C6316E",
+    wheelBtnDisabledBg: "#FCE4F0",
+    wheelBtnDisabledBorder: "#F3B8D6",
+    wheelTextFill: "#FFFFFF",
+    wheelSegments: ["#F49CC7", "#E85FA6", "#F7B6D9", "#D6428C", "#FBD2E8", "#C6316E"],
+  },
+};
+
+const THEME_ICONS = {
+  default: {
+    questsActive: "⚔️",
+    questsEmpty: "🛡️",
+    questsTitle: "📜",
+    questItem: "⚔️",
+    questAction: "🗡️",
+    shop: "🏪",
+    buyBadge: "🛒",
+    shopAdmin: "🧰",
+    vouchers: "📋",
+    wheel: "🎡",
+    win: "🎉",
+  },
+  pink: {
+    questsActive: "✨",
+    questsEmpty: "🌸",
+    questsTitle: "💌",
+    questItem: "✨",
+    questAction: "🎀",
+    shop: "🏰",
+    buyBadge: "💝",
+    shopAdmin: "👑",
+    vouchers: "🎀",
+    wheel: "🎠",
+    win: "✨",
+  },
+};
+
+function themeVarsCss(theme) {
+  const p = THEME_PALETTES[theme] || THEME_PALETTES.default;
+  return `:host {
+    --qr-bg: ${p.bg}; --qr-border: ${p.border}; --qr-header-bg: ${p.headerBg};
+    --qr-accent: ${p.accent}; --qr-accent-text: ${p.accentText}; --qr-sub-text: ${p.subText};
+    --qr-item-bg: ${p.itemBg}; --qr-item-border: ${p.itemBorder}; --qr-item-text: ${p.itemText};
+    --qr-item-sub-text: ${p.itemSubText}; --qr-badge-bg: ${p.badgeBg}; --qr-badge-border: ${p.badgeBorder};
+    --qr-badge-text: ${p.badgeText}; --qr-urgent-border: ${p.urgentBorder}; --qr-urgent-bg: ${p.urgentBg};
+    --qr-urgent-text: ${p.urgentText}; --qr-outofstock-bg: ${p.outOfStockBg}; --qr-outofstock-border: ${p.outOfStockBorder};
+    --qr-outofstock-text: ${p.outOfStockText}; --qr-timer-bg: ${p.timerBg}; --qr-timer-border: ${p.timerBorder};
+    --qr-timer-text: ${p.timerText}; --qr-div-color: ${p.divColor}; --qr-empty-text: ${p.emptyText};
+    --qr-btn-bg: ${p.btnBg}; --qr-btn-border: ${p.btnBorder}; --qr-btn-text: ${p.btnText};
+    --qr-btn-sell-bg: ${p.btnSellBg}; --qr-btn-sell-border: ${p.btnSellBorder}; --qr-btn-sell-text: ${p.btnSellText};
+    --qr-add-btn-bg: ${p.addBtnBg}; --qr-add-btn-text: ${p.addBtnText}; --qr-input-bg: ${p.inputBg};
+    --qr-input-border: ${p.inputBorder}; --qr-input-text: ${p.inputText}; --qr-placeholder-text: ${p.placeholderText};
+  }`;
+}
+
 const THEME = `
   :host { display: block; }
-  .qr-card { background: #1A0E06; border: 1px solid #5A3018; border-radius: 14px; overflow: hidden; font-family: Roboto, sans-serif; }
-  .qr-header { background: #2C1810; border-bottom: 1px solid #5A3018; padding: 20px 18px 18px; position: relative; overflow: hidden; text-align: center; }
-  .qr-header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #C9860A; }
+  .qr-card { background: var(--qr-bg); border: 1px solid var(--qr-border); border-radius: 14px; overflow: hidden; font-family: Roboto, sans-serif; }
+  .qr-header { background: var(--qr-header-bg); border-bottom: 1px solid var(--qr-border); padding: 20px 18px 18px; position: relative; overflow: hidden; text-align: center; }
+  .qr-header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--qr-accent); }
   .qr-header-icon { font-size: 28px; display: block; margin-bottom: 6px; }
-  .qr-header-title { font-size: 15px; font-weight: 500; color: #F5D78E; letter-spacing: 0.04em; }
-  .qr-header-sub { font-size: 12px; color: #A07848; margin-top: 4px; }
-  .qr-gold { position: absolute; top: 12px; left: 14px; display: flex; align-items: center; gap: 5px; background: #3A1A08; border: 1px solid #C9860A; border-radius: 99px; padding: 4px 10px 4px 7px; }
-  .qr-gold-amount { font-size: 12px; font-weight: 500; color: #F5D78E; }
+  .qr-header-title { font-size: 15px; font-weight: 500; color: var(--qr-accent-text); letter-spacing: 0.04em; }
+  .qr-header-sub { font-size: 12px; color: var(--qr-sub-text); margin-top: 4px; }
+  .qr-gold { position: absolute; top: 12px; left: 14px; display: flex; align-items: center; gap: 5px; background: var(--qr-badge-bg); border: 1px solid var(--qr-accent); border-radius: 99px; padding: 4px 10px 4px 7px; }
+  .qr-gold-amount { font-size: 12px; font-weight: 500; color: var(--qr-accent-text); }
   .qr-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
-  .qr-div { font-size: 11px; text-align: center; color: #6B3D1E; letter-spacing: 6px; margin: 2px 0; }
-  .qr-item { background: #1E1208; border: 1px solid #5A3018; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-left: 3px solid #C9860A; position: relative; overflow: hidden; }
-  .qr-item.urgent { border-left-color: #C93030; }
-  .qr-item.disabled { opacity: 0.4; cursor: not-allowed; border-left-color: #5A3018; }
-  .qr-n { width: 32px; height: 32px; border-radius: 50%; background: #3A1A08; border: 1px solid #8B5A2B; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #F5D78E; flex-shrink: 0; }
-  .qr-t { font-size: 13px; font-weight: 500; color: #F0C060; line-height: 1.5; }
-  .qr-s { font-size: 11px; color: #7A5530; margin-top: 4px; }
-  .qr-b { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #3A1A08; border: 0.5px solid #8B5A2B; color: #C9860A; margin-left: 6px; }
-  .qr-timer { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #1A2E1A; border: 0.5px solid #3A8C3A; color: #4CAF50; margin-left: 6px; }
-  .qr-timer.urgent { background: #2E1A1A; border-color: #C93030; color: #C93030; }
-  .qr-empty { text-align: center; padding: 18px 0 10px; color: #3A8C3A; font-size: 13px; }
-  .qr-btn { font-size: 11px; padding: 5px 12px; border-radius: 99px; background: #1A2E1A; border: 1px solid #3A8C3A; color: #4CAF50; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  .qr-btn-sell { background: #3A1A08; border-color: #8B5A2B; color: #C9860A; margin-left: 6px; }
-  .qr-badge-red { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: #2E1010; border: 0.5px solid #C93030; color: #C93030; }
+  .qr-div { font-size: 11px; text-align: center; color: var(--qr-div-color); letter-spacing: 6px; margin: 2px 0; }
+  .qr-item { background: var(--qr-item-bg); border: 1px solid var(--qr-item-border); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-left: 3px solid var(--qr-accent); position: relative; overflow: hidden; }
+  .qr-item.urgent { border-left-color: var(--qr-urgent-border); }
+  .qr-item.disabled { opacity: 0.4; cursor: not-allowed; border-left-color: var(--qr-item-border); }
+  .qr-n { width: 32px; height: 32px; border-radius: 50%; background: var(--qr-badge-bg); border: 1px solid var(--qr-badge-border); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--qr-accent-text); flex-shrink: 0; }
+  .qr-t { font-size: 13px; font-weight: 500; color: var(--qr-item-text); line-height: 1.5; }
+  .qr-s { font-size: 11px; color: var(--qr-item-sub-text); margin-top: 4px; }
+  .qr-b { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--qr-badge-bg); border: 0.5px solid var(--qr-badge-border); color: var(--qr-badge-text); margin-left: 6px; }
+  .qr-timer { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--qr-timer-bg); border: 0.5px solid var(--qr-timer-border); color: var(--qr-timer-text); margin-left: 6px; }
+  .qr-timer.urgent { background: var(--qr-urgent-bg); border-color: var(--qr-urgent-border); color: var(--qr-urgent-text); }
+  .qr-empty { text-align: center; padding: 18px 0 10px; color: var(--qr-empty-text); font-size: 13px; }
+  .qr-btn { font-size: 11px; padding: 5px 12px; border-radius: 99px; background: var(--qr-btn-bg); border: 1px solid var(--qr-btn-border); color: var(--qr-btn-text); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .qr-btn-sell { background: var(--qr-btn-sell-bg); border-color: var(--qr-btn-sell-border); color: var(--qr-btn-sell-text); margin-left: 6px; }
+  .qr-badge-red { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--qr-outofstock-bg); border: 0.5px solid var(--qr-outofstock-border); color: var(--qr-outofstock-text); }
   .qr-add-row { display: flex; gap: 8px; padding: 4px 2px 10px; }
-  .qr-add-input { flex: 1; background: #1E1208; border: 1px solid #5A3018; border-radius: 8px; color: #F0C060; padding: 8px 10px; font-size: 13px; font-family: inherit; }
-  .qr-add-input::placeholder { color: #7A5530; }
-  .qr-add-btn { background: #C9860A; border: none; border-radius: 8px; color: #1A0E06; font-weight: bold; padding: 0 14px; cursor: pointer; }
+  .qr-add-input { flex: 1; background: var(--qr-input-bg); border: 1px solid var(--qr-input-border); border-radius: 8px; color: var(--qr-input-text); padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  .qr-add-input::placeholder { color: var(--qr-placeholder-text); }
+  .qr-add-btn { background: var(--qr-add-btn-bg); border: none; border-radius: 8px; color: var(--qr-add-btn-text); font-weight: bold; padding: 0 14px; cursor: pointer; }
   .qr-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .qr-shopadmin-form { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px 4px; }
   .qr-shopadmin-emoji { flex: 0 0 56px; text-align: center; }
@@ -841,28 +991,12 @@ const QUEST_RPG_CARDS = [
 
 window.customCards = window.customCards || [];
 
-for (const [tag, cls, name, description] of QUEST_RPG_CARDS) {
-  try {
-    if (window.customElements.get(tag)) {
-      console.warn(`[quest-rpg] ${tag} was already registered (script loaded twice?) - skipping re-define.`);
-    } else {
-      window.customElements.define(tag, cls);
-      console.info(`[quest-rpg] registered ${tag}`);
-    }
-    window.customCards.push({ type: tag, name, description });
-  } catch (err) {
-    console.error(`[quest-rpg] FAILED to register ${tag}:`, err);
-  }
-}
-
-// Sanity check: prove to ourselves (and the console) whether the tags are
-// actually resolvable via the registry Home Assistant itself will query.
 window.setTimeout(() => {
   for (const [tag, cls, name, description] of QUEST_RPG_CARDS) {
     if (!window.customElements.get(tag)) {
       window.customElements.define(tag, cls);
     }
-    if (!window.customCards.find(c => c.type === tag)) {
+    if (!window.customCards.find((c) => c.type === tag)) {
       window.customCards.push({ type: tag, name, description });
     }
   }
