@@ -34,11 +34,13 @@ from .const import (
     ATTR_TASK_TEXT,
     ATTR_VOUCHER_TEXT,
     CONF_AI_TASK_ENTITY_ID,
+    CONF_QUEST_CUSTOM_INSTRUCTIONS,
     CONF_QUEST_LANGUAGE,
     CONF_WHEEL_COST,
     CONF_WHEEL_MAX_SPINS,
     CONF_WHEEL_WINDOW_END,
     CONF_WHEEL_WINDOW_START,
+    DEFAULT_QUEST_CUSTOM_INSTRUCTIONS,
     DEFAULT_QUEST_LANGUAGE,
     DEFAULT_WHEEL_COST,
     DEFAULT_WHEEL_MAX_SPINS,
@@ -65,6 +67,7 @@ from .const import (
 )
 from .helpers import (
     bump_stock,
+    due_info,
     extract_price,
     extract_stock,
     strip_price_and_stock,
@@ -257,6 +260,9 @@ async def _do_add_task(hass: HomeAssistant, entry_id: str, task_text: str) -> No
         task_text,
         entry.options.get(CONF_AI_TASK_ENTITY_ID) or None,
         entry.options.get(CONF_QUEST_LANGUAGE, DEFAULT_QUEST_LANGUAGE),
+        entry.options.get(
+            CONF_QUEST_CUSTOM_INSTRUCTIONS, DEFAULT_QUEST_CUSTOM_INSTRUCTIONS
+        ),
     )
     _todo(hass, entry_id, SUFFIX_QUESTS).add_text_item(quest_text, due=due)
 
@@ -328,6 +334,14 @@ def _async_register_services(hass: HomeAssistant) -> None:
         quests_entity = _todo(hass, entry_id, SUFFIX_QUESTS)
 
         reward = extract_price(quest_text) or 10
+        # Match the card's display: an expired quest only pays out 1 gold,
+        # regardless of the reward encoded in its text.
+        item = next(
+            (i for i in quests_entity.items if i.summary == quest_text), None
+        )
+        if item is not None and due_info(item.due, dt_util.now())["expired"]:
+            reward = 1
+
         quests_entity.remove_text_item(quest_text)
         await _add_gold(hass, entry_id, reward)
 

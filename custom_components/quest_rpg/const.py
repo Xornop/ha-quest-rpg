@@ -7,12 +7,14 @@ PLATFORMS = ["number", "todo", "text", "sensor"]
 CONF_PLAYER_NAME = "player_name"
 CONF_AI_TASK_ENTITY_ID = "ai_task_entity_id"
 CONF_QUEST_LANGUAGE = "quest_language"
+CONF_QUEST_CUSTOM_INSTRUCTIONS = "quest_custom_instructions"
 CONF_WHEEL_COST = "wheel_cost"
 CONF_WHEEL_MAX_SPINS = "wheel_max_spins"
 CONF_WHEEL_WINDOW_START = "wheel_window_start"
 CONF_WHEEL_WINDOW_END = "wheel_window_end"
 
 DEFAULT_QUEST_LANGUAGE = "English"
+DEFAULT_QUEST_CUSTOM_INSTRUCTIONS = ""
 DEFAULT_WHEEL_MAX_SPINS = 3
 DEFAULT_WHEEL_COST = 10
 DEFAULT_WHEEL_PRIZES = [0, 5, 10, 15, 20, 30]

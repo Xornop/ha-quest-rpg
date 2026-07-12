@@ -19,11 +19,13 @@ from homeassistant.util import slugify
 from .const import (
     CONF_AI_TASK_ENTITY_ID,
     CONF_PLAYER_NAME,
+    CONF_QUEST_CUSTOM_INSTRUCTIONS,
     CONF_QUEST_LANGUAGE,
     CONF_WHEEL_COST,
     CONF_WHEEL_MAX_SPINS,
     CONF_WHEEL_WINDOW_END,
     CONF_WHEEL_WINDOW_START,
+    DEFAULT_QUEST_CUSTOM_INSTRUCTIONS,
     DEFAULT_QUEST_LANGUAGE,
     DEFAULT_WHEEL_COST,
     DEFAULT_WHEEL_MAX_SPINS,
@@ -46,6 +48,17 @@ def _options_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_QUEST_LANGUAGE,
                 default=defaults.get(CONF_QUEST_LANGUAGE, DEFAULT_QUEST_LANGUAGE),
             ): str,
+            vol.Optional(
+                CONF_QUEST_CUSTOM_INSTRUCTIONS,
+                default=defaults.get(
+                    CONF_QUEST_CUSTOM_INSTRUCTIONS,
+                    DEFAULT_QUEST_CUSTOM_INSTRUCTIONS,
+                ),
+            ): selector.TextSelector(
+                selector.TextSelectorConfig(
+                    multiline=True, type=selector.TextSelectorType.TEXT
+                )
+            ),
             vol.Optional(
                 CONF_WHEEL_COST,
                 default=defaults.get(CONF_WHEEL_COST, DEFAULT_WHEEL_COST),

@@ -33,6 +33,9 @@ sometimes a friendly favour.
 time-consuming the task is. If the task already mentions a point or gold \
 amount, use that instead.
 - Write the quest text in {language}.
+- Use natural, clear language - avoid old-fashioned, archaic, or overly \
+poetic wording unless the extra instructions below say otherwise.
+{custom_instructions_block}
 - The reward MUST be the very last thing in the string, formatted exactly \
 as "(₡N)" with N a whole number. Do not add a period, exclamation mark, or \
 any other character after the closing parenthesis - it must be the last \
@@ -96,10 +99,19 @@ async def generate_quest(
     task_text: str,
     ai_task_entity_id: str | None,
     language: str,
+    custom_instructions: str = "",
 ) -> tuple[str, datetime | None]:
     """Return (quest_text_with_reward, due_datetime_or_none)."""
+    custom_instructions = (custom_instructions or "").strip()
+    custom_instructions_block = (
+        f"- Additional style instructions from the player's household: "
+        f"{custom_instructions}"
+        if custom_instructions
+        else ""
+    )
     instructions = INSTRUCTIONS_TEMPLATE.format(
         language=language or "English",
+        custom_instructions_block=custom_instructions_block,
         now=dt_util.now().strftime("%Y-%m-%d %H:%M:%S"),
         task=task_text,
     )

@@ -8,6 +8,7 @@
           "player_name": "Naam van de speler",
           "ai_task_entity_id": "AI Task-entiteit (optioneel - leeg laten voor de standaard van Home Assistant)",
           "quest_language": "Taal voor gegenereerde quest-tekst",
+          "quest_custom_instructions": "Extra instructies voor de AI (optioneel)",
           "wheel_cost": "Kosten rad van fortuin (goud)",
           "wheel_max_spins": "Max. aantal draaien per dag",
           "wheel_window_start": "Rad beschikbaar vanaf",
@@ -29,6 +30,7 @@
         "data": {
           "ai_task_entity_id": "AI Task-entiteit (optioneel - leeg laten voor de standaard van Home Assistant)",
           "quest_language": "Taal voor gegenereerde quest-tekst",
+          "quest_custom_instructions": "Extra instructies voor de AI (optioneel)",
           "wheel_cost": "Kosten rad van fortuin (goud)",
           "wheel_max_spins": "Max. aantal draaien per dag",
           "wheel_window_start": "Rad beschikbaar vanaf",
