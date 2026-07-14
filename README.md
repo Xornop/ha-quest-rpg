@@ -110,6 +110,8 @@ Add these anywhere in your dashboard (`type: custom:...`):
 | `quest-rpg-vouchers-card` | `vouchers_entity`, `admin?` |
 | `quest-rpg-wheel-card` | `gold_entity`, `spins_entity`, `cost?`, `prizes?`, `max_spins?` |
 
+Using `theme: pink` gives each card a pink/princess theme instead of the default adventure theme.
+
 ```yaml
 type: custom:quest-rpg-quests-card
 gold_entity: number.quest_rpg_johnny_gold
