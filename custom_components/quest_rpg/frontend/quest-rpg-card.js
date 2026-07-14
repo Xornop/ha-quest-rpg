@@ -325,6 +325,19 @@ class QuestRpgBaseCard extends HTMLElement {
     return this._hass.states[id] || null;
   }
 
+  _theme() {
+    const t = (this._config && this._config.theme) || "default";
+    return THEME_PALETTES[t] ? t : "default";
+  }
+
+  _icons() {
+    return THEME_ICONS[this._theme()] || THEME_ICONS.default;
+  }
+
+  _palette() {
+    return THEME_PALETTES[this._theme()] || THEME_PALETTES.default;
+  }
+
   _entryId(...entities) {
     for (const e of entities) {
       if (e && e.attributes && e.attributes.entry_id) return e.attributes.entry_id;
@@ -339,7 +352,7 @@ class QuestRpgBaseCard extends HTMLElement {
 
   _shell(headerIcon, title, sub, gold, bodyHtml) {
     return `
-      <style>${THEME}</style>
+      <style>${themeVarsCss(this._theme())}${THEME}</style>
       <div class="qr-card">
         <div class="qr-header">
           ${VINE_HEADER}
@@ -360,6 +373,7 @@ class QuestRpgBaseCard extends HTMLElement {
 class QuestRpgQuestsCard extends QuestRpgBaseCard {
   _render() {
     if (!this._hass || !this._config) return;
+    const icons = this._icons();
     const questsEntity = this._entity("quests_entity");
     const goldEntity = this._entity("gold_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
@@ -396,9 +410,9 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 ${VINES[i % 3]}
                 <div class="qr-n">${roman}</div>
                 <div style="flex:1;min-width:0;">
-                  <div class="qr-t">⚔️ ${short}</div>
+                  <div class="qr-t">${icons.questItem} ${short}</div>
                   <div class="qr-s">
-                    🗡️ Tap to complete
+                    ${icons.questAction} Tap to complete
                     <span class="qr-b">${reward > 0 ? `${reward} ₡` : ""}</span>
                     ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
                   </div>
@@ -410,8 +424,8 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
     }
 
     this.shadowRoot.innerHTML = this._shell(
-      count > 0 ? "⚔️" : "🛡️",
-      "📜 Active Quests",
+      count > 0 ? icons.questsActive : icons.questsEmpty,
+      `${icons.questsTitle} Active Quests`,
       count > 0 ? `✦ ${count} quest${count > 1 ? "s" : ""} open ✦` : "✦ All quests complete ✦",
       gold,
       addRow + body
@@ -493,6 +507,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
 
   _render() {
     if (!this._hass || !this._config) return;
+    const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
     const goldEntity = this._entity("gold_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : 0;
@@ -533,7 +548,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
               : e.stock === null
               ? `<span class="qr-b">∞</span>`
               : `<span class="qr-b">${e.stock} available</span>`;
-            const buyBadge = !e.disabled ? `<span class="qr-b qr-buy-badge">🛒 Buy</span>` : "";
+            const buyBadge = !e.disabled ? `<span class="qr-b qr-buy-badge">${icons.buyBadge} Buy</span>` : "";
             return `
               <div class="qr-item ${e.disabled ? "disabled" : ""}" data-idx="${i}">
                 ${VINES[i % 3]}
@@ -549,7 +564,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>`;
     }
 
-    this.shadowRoot.innerHTML = this._shell("🏪", "🛒 Reward Shop", "✦ Spend your hard-earned gold ✦", gold, body);
+    this.shadowRoot.innerHTML = this._shell(icons.shop, `${icons.buyBadge} Reward Shop`, "✦ Spend your hard-earned gold ✦", gold, body);
 
     this.shadowRoot.querySelectorAll(".qr-item:not(.disabled)").forEach((el) => {
       el.addEventListener("click", () => {
@@ -579,6 +594,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
 class QuestRpgShopAdminCard extends QuestRpgBaseCard {
   _render() {
     if (!this._hass || !this._config) return;
+    const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
     const entryId = this._entryId(shopEntity, this._entity("gold_entity"));
     const items = (shopEntity && shopEntity.attributes.quests) || [];
@@ -619,7 +635,7 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     `;
 
     this.shadowRoot.innerHTML = this._shell(
-      "🧰",
+      icons.shopAdmin,
       "🛠️ Shop Management",
       "✦ Add, edit, or remove reward shop items ✦",
       null,
@@ -754,6 +770,7 @@ class QuestRpgVouchersCard extends QuestRpgBaseCard {
 
   _render() {
     if (!this._hass || !this._config) return;
+    const icons = this._icons();
     const vouchersEntity = this._entity("vouchers_entity");
     const vouchers = (vouchersEntity && vouchersEntity.attributes.quests) || [];
     const entryId = this._entryId(vouchersEntity);
@@ -786,8 +803,8 @@ class QuestRpgVouchersCard extends QuestRpgBaseCard {
     }
 
     this.shadowRoot.innerHTML = this._shell(
-      "📋",
-      "⚔️ Voucher Management",
+      icons.vouchers,
+      `${icons.vouchers} Voucher Management`,
       isAdmin ? "✦ Admin mode ✦" : "✦ Pending rewards ✦",
       null,
       body
@@ -839,6 +856,8 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
 
   _render() {
     if (!this._hass || !this._config) return;
+    const icons = this._icons();
+    const palette = this._palette();
     const goldEntity = this._entity("gold_entity");
     const spinsEntity = this._entity("spins_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : 0;
@@ -873,7 +892,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     this._built = true;
 
     const canSpin = !this._spinning && windowOpen && gold >= this._cost && spinsToday < this._maxSpins;
-    const colors = ["#3A1A08", "#5A3018", "#2D6A2D", "#1E4620", "#C9860A", "#D4AF37"];
+    const colors = palette.wheelSegments;
     const segPaths = [
       "M0,0 L100,0 A100,100 0 0,1 50,86.6 Z",
       "M0,0 L50,86.6 A100,100 0 0,1 -50,86.6 Z",
@@ -886,20 +905,20 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
 
     this.shadowRoot.innerHTML = `
       <style>
-        ${THEME}
+        ${themeVarsCss(this._theme())}${THEME}
         .wheel-container { position: relative; width: 220px; height: 220px; margin: 30px auto 16px; }
-        .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #C9860A; box-sizing: border-box; background: #2C1810; transition: transform 4.5s cubic-bezier(0.08,0.85,0.25,1); }
-        .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid #D4AF37; z-index: 10; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); }
-        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; background: #D4AF37; border: 3px solid #1A0E06; border-radius: 50%; z-index: 5; }
-        .wheel-result { margin-top: 12px; height: 22px; font-size: 14px; color: #F5D78E; text-align: center; }
-        .wheel-btn { display: block; margin: 8px auto 4px; background: #2D6A2D; border: 1px solid #4CAF50; border-radius: 10px; color: white; padding: 10px 22px; font-weight: bold; cursor: pointer; }
-        .wheel-btn:disabled { opacity: 0.4; cursor: not-allowed; background: #2C1810; border-color: #5A3018; }
-        .wheel-text { font-family: Roboto, sans-serif; font-size: 13px; font-weight: bold; fill: #F5D78E; }
+        .wheel-svg-wrap { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--qr-wheel-border, ${palette.wheelBorder}); box-sizing: border-box; background: var(--qr-wheel-bg, ${palette.wheelBg}); transition: transform 4.5s cubic-bezier(0.08,0.85,0.25,1); }
+        .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid ${palette.wheelPointer}; z-index: 10; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5)); }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; background: ${palette.wheelCenterBg}; border: 3px solid ${palette.wheelCenterBorder}; border-radius: 50%; z-index: 5; }
+        .wheel-result { margin-top: 12px; height: 22px; font-size: 14px; color: ${palette.wheelResultText}; text-align: center; }
+        .wheel-btn { display: block; margin: 8px auto 4px; background: ${palette.wheelBtnBg}; border: 1px solid ${palette.wheelBtnBorder}; border-radius: 10px; color: white; padding: 10px 22px; font-weight: bold; cursor: pointer; }
+        .wheel-btn:disabled { opacity: 0.4; cursor: not-allowed; background: ${palette.wheelBtnDisabledBg}; border-color: ${palette.wheelBtnDisabledBorder}; }
+        .wheel-text { font-family: Roboto, sans-serif; font-size: 13px; font-weight: bold; fill: ${palette.wheelTextFill}; }
       </style>
       <div class="qr-card" style="text-align:center; padding-bottom: 16px;">
         <div class="qr-header">
           <div class="qr-gold"><span>🪙</span><span id="goldLabel" class="qr-gold-amount">${gold} ₡</span></div>
-          <span class="qr-header-icon">🎡</span>
+          <span class="qr-header-icon">${icons.wheel}</span>
           <div class="qr-header-title">Wheel of Fortune</div>
           <div class="qr-header-sub">${subText}</div>
         </div>
@@ -964,7 +983,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     wheel.style.transform = `rotate(${totalDeg}deg)`;
 
     setTimeout(() => {
-      result.innerText = prize > cost ? `🎉 You won: ${prize} ₡!` : prize === cost ? `Break even: ${prize} ₡` : `Unlucky: ${prize} ₡`;
+      result.innerText = prize > cost ? `${this._icons().win} You won: ${prize} ₡!` : prize === cost ? `Break even: ${prize} ₡` : `Unlucky: ${prize} ₡`;
 
       // Optimistic final gold total, shown immediately rather than waiting
       // for the entity's state push to arrive.
