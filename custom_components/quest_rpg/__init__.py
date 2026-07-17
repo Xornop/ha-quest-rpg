@@ -487,9 +487,10 @@ def _async_register_services(hass: HomeAssistant) -> None:
         price = int(call.data[ATTR_ITEM_PRICE])
         stock = call.data.get(ATTR_ITEM_STOCK)
         stock = int(stock) if stock not in (None, "") else None
+        new_name = (call.data.get(ATTR_ITEM_NAME) or "").strip()
 
         shop_entity = _todo(hass, entry_id, SUFFIX_SHOP_ITEMS)
-        name = strip_price_and_stock(item_text)
+        name = new_name or strip_price_and_stock(item_text)
         new_text = with_stock(name, price, stock)
         shop_entity.rename_text_item(item_text, new_text)
 
@@ -598,6 +599,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
             {
                 **entry_id_schema,
                 vol.Required(ATTR_ITEM_TEXT): cv.string,
+                vol.Optional(ATTR_ITEM_NAME): cv.string,
                 vol.Required(ATTR_ITEM_PRICE): vol.Coerce(int),
                 vol.Optional(ATTR_ITEM_STOCK): vol.Any(vol.Coerce(int), None, ""),
             }
