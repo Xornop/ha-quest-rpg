@@ -708,12 +708,12 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
         const prijs = priceOf(item);
         const stock = stockOf(item);
         return `
-          <div class="qr-item" data-idx="${i}" style="cursor:default;">
+          <div class="qr-item" data-idx="${i}" style="cursor:default; align-items:flex-start;">
             ${VINES[i % 3]}
             <div class="qr-n">${firstWord(naam)}</div>
             <div style="flex:1;min-width:0;">
-              <div class="qr-t">${restWords(naam)}</div>
-              <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+              <input id="rowName-${i}" class="qr-add-input" type="text" value="${naam.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+              <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
                 ₡<input id="rowPrice-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
                 <input id="rowStock-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
                 <button class="qr-btn qr-shopadmin-save" data-idx="${i}">💾</button>
@@ -727,9 +727,8 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     const goldSection = `
       <div class="qr-t" style="margin-bottom:6px;">🪙 Adjust gold balance</div>
       <div class="qr-shopadmin-form">
-        <input id="goldAmount" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Amount ₡" />
-        <button id="goldAddBtn" class="qr-btn" style="flex:0 0 auto;">➕ Add</button>
-        <button id="goldRemoveBtn" class="qr-btn qr-btn-sell" style="flex:0 0 auto;">➖ Remove</button>
+        <input id="goldAmount" class="qr-add-input qr-shopadmin-num" type="number" min="0" value="${gold ?? ""}" />
+        <button id="goldSaveBtn" class="qr-btn" style="flex:0 0 auto;">💾</button>
       </div>
       <div id="goldAdminMsg" class="qr-s" style="margin-top:2px; margin-bottom:10px;"></div>
       <div class="qr-div">✦ · · · ✦ · · · ✦</div>
@@ -758,47 +757,44 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     );
 
     const goldAmountInput = this.shadowRoot.getElementById("goldAmount");
-    const goldAddBtn = this.shadowRoot.getElementById("goldAddBtn");
-    const goldRemoveBtn = this.shadowRoot.getElementById("goldRemoveBtn");
+    const goldSaveBtn = this.shadowRoot.getElementById("goldSaveBtn");
     const goldMsg = this.shadowRoot.getElementById("goldAdminMsg");
 
-    const adjustGold = (sign) => {
-      const amount = parseInt(goldAmountInput.value, 10);
-      if (!amount || amount <= 0) {
-        goldMsg.textContent = "⚠️ Enter a positive amount.";
+    const saveGold = () => {
+      const newValue = parseInt(goldAmountInput.value, 10);
+      if (isNaN(newValue) || newValue < 0) {
+        goldMsg.textContent = "⚠️ Enter a valid amount.";
         return;
       }
       if (!entryId) {
         goldMsg.textContent = "⚠️ Card misconfigured: no entry_id found on shop_entity/gold_entity.";
         return;
       }
-      goldAddBtn.disabled = true;
-      goldRemoveBtn.disabled = true;
+      const delta = newValue - (gold ?? 0);
+      if (delta === 0) return;
+
+      goldSaveBtn.disabled = true;
       this._hass
         .callService("quest_rpg", "add_gold", {
           config_entry_id: entryId,
-          amount: sign * amount,
+          amount: delta,
         })
         .then(() => {
-          goldMsg.textContent = `✅ ${sign > 0 ? "Added" : "Removed"} ${amount} ₡.`;
-          goldAmountInput.value = "";
+          goldMsg.textContent = "✅ Updated.";
         })
         .catch((err) => {
           console.error("[quest-rpg] add_gold FAILED:", err);
           goldMsg.textContent = `❌ Could not adjust gold: ${err && err.message ? err.message : err}`;
         })
         .finally(() => {
-          goldAddBtn.disabled = false;
-          goldRemoveBtn.disabled = false;
+          goldSaveBtn.disabled = false;
         });
     };
 
-    goldAddBtn.addEventListener("click", () => adjustGold(1));
-    goldRemoveBtn.addEventListener("click", () => adjustGold(-1));
+    goldSaveBtn.addEventListener("click", saveGold);
     goldAmountInput.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") adjustGold(1);
+      if (ev.key === "Enter") saveGold();
     });
-
 
     const nameInput = this.shadowRoot.getElementById("itemName");
     const emojiInput = this.shadowRoot.getElementById("itemEmoji");
@@ -860,14 +856,16 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       saveBtn.addEventListener("click", () => {
         const i = parseInt(saveBtn.dataset.idx, 10);
         const itemText = items[i];
+        const nameEl = this.shadowRoot.getElementById(`rowName-${i}`);
         const priceEl = this.shadowRoot.getElementById(`rowPrice-${i}`);
         const stockEl = this.shadowRoot.getElementById(`rowStock-${i}`);
+        const newName = nameEl.value.trim();
         const price = parseInt(priceEl.value, 10);
-        if (!price || price <= 0) {
-          msg.textContent = "⚠️ Price must be a positive number.";
+        if (!newName || !price || price <= 0) {
+          msg.textContent = "⚠️ Name and price must be filled in.";
           return;
         }
-        const data = { config_entry_id: entryId, item_text: itemText, price };
+        const data = { config_entry_id: entryId, item_text: itemText, name: newName, price };
         const stockRaw = stockEl.value.trim();
         if (stockRaw !== "") data.stock = parseInt(stockRaw, 10);
 
