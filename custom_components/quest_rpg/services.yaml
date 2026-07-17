@@ -37,6 +37,53 @@ complete_quest:
       selector:
         text:
 
+update_quest:
+  name: Update quest
+  description: Changes a quest's description and/or gold reward (keeps its deadline).
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    quest_text:
+      name: Quest text
+      description: The exact quest text as shown on the quest sensor.
+      required: true
+      selector:
+        text:
+    new_text:
+      name: New description
+      required: true
+      selector:
+        text:
+    reward:
+      name: Reward
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+
+remove_quest:
+  name: Remove quest
+  description: Deletes a quest without paying out its reward.
+  fields:
+    config_entry_id:
+      name: Player
+      required: true
+      selector:
+        config_entry:
+          integration: quest_rpg
+    quest_text:
+      name: Quest text
+      description: The exact quest text as shown on the quest sensor.
+      required: true
+      selector:
+        text:
+
 spin_wheel:
   name: Spin the fortune wheel
   description: Spends gold on a wheel spin and pays out whatever it lands on.
