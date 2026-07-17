@@ -30,6 +30,8 @@ from .const import (
     ATTR_ITEM_PRICE,
     ATTR_ITEM_STOCK,
     ATTR_ITEM_TEXT,
+    ATTR_QUEST_NEW_TEXT,
+    ATTR_QUEST_REWARD,
     ATTR_QUEST_TEXT,
     ATTR_TASK_TEXT,
     ATTR_VOUCHER_TEXT,
@@ -55,9 +57,11 @@ from .const import (
     SERVICE_BUY_ITEM,
     SERVICE_COMPLETE_QUEST,
     SERVICE_REDEEM_VOUCHER,
+    SERVICE_REMOVE_QUEST,
     SERVICE_REMOVE_SHOP_ITEM,
     SERVICE_SELL_VOUCHER,
     SERVICE_SPIN_WHEEL,
+    SERVICE_UPDATE_QUEST,
     SERVICE_UPDATE_SHOP_ITEM,
     SUFFIX_GOLD,
     SUFFIX_QUESTS,
@@ -345,6 +349,20 @@ def _async_register_services(hass: HomeAssistant) -> None:
         quests_entity.remove_text_item(quest_text)
         await _add_gold(hass, entry_id, reward)
 
+    async def handle_update_quest(call: ServiceCall) -> None:
+        entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
+        quest_text = call.data[ATTR_QUEST_TEXT]
+        new_text = call.data[ATTR_QUEST_NEW_TEXT].strip()
+        reward = int(call.data[ATTR_QUEST_REWARD])
+
+        full_new_text = f"{new_text} (₡{reward})"
+        _todo(hass, entry_id, SUFFIX_QUESTS).rename_text_item(quest_text, full_new_text)
+
+    async def handle_remove_quest(call: ServiceCall) -> None:
+        entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
+        quest_text = call.data[ATTR_QUEST_TEXT]
+        _todo(hass, entry_id, SUFFIX_QUESTS).remove_text_item(quest_text)
+
     async def handle_spin_wheel(call: ServiceCall) -> None:
         entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
         entry: ConfigEntry = hass.config_entries.async_get_entry(entry_id)
@@ -487,6 +505,27 @@ def _async_register_services(hass: HomeAssistant) -> None:
         DOMAIN,
         SERVICE_COMPLETE_QUEST,
         handle_complete_quest,
+        schema=vol.Schema(
+            {**entry_id_schema, vol.Required(ATTR_QUEST_TEXT): cv.string}
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_UPDATE_QUEST,
+        handle_update_quest,
+        schema=vol.Schema(
+            {
+                **entry_id_schema,
+                vol.Required(ATTR_QUEST_TEXT): cv.string,
+                vol.Required(ATTR_QUEST_NEW_TEXT): cv.string,
+                vol.Required(ATTR_QUEST_REWARD): vol.Coerce(int),
+            }
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_REMOVE_QUEST,
+        handle_remove_quest,
         schema=vol.Schema(
             {**entry_id_schema, vol.Required(ATTR_QUEST_TEXT): cv.string}
         ),

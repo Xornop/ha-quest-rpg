@@ -200,6 +200,7 @@ const THEME = `
   .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
   .qr-shopadmin-num { flex: 0 0 110px; }
   .qr-shopadmin-rownum { flex: 0 0 60px; padding: 4px 6px; font-size: 11px; }
+  .qr-stepper-btn { padding: 4px 9px; font-size: 11px; }
 `;
 
 const VINE_HEADER =
@@ -374,6 +375,7 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
   _render() {
     if (!this._hass || !this._config) return;
     const icons = this._icons();
+    const isAdmin = !!this._config.admin;
     const questsEntity = this._entity("quests_entity");
     const goldEntity = this._entity("gold_entity");
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
@@ -396,6 +398,35 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
     let body;
     if (count === 0) {
       body = `<div class="qr-empty">🌿 No quests - rest easy, hero! 🌿</div>`;
+    } else if (isAdmin) {
+      body =
+        `<div class="qr-div">✦ · · · ✦ · · · ✦</div>` +
+        quests
+          .map((q, i) => {
+            const d = due[i] || { has_due: false, urgent: false, expired: false, timer_text: "" };
+            const roman = i < 10 ? ROMAN[i] : String(i + 1);
+            const short = q.replace(/\s*\(₡\d+\)[.!?]*\s*$/, "");
+            const reward = d.expired ? 1 : priceOf(q);
+            return `
+              <div class="qr-item ${d.urgent || d.expired ? "urgent" : ""}" data-idx="${i}" style="cursor:default; align-items:flex-start;">
+                ${VINES[i % 3]}
+                <div class="qr-n">${roman}</div>
+                <div style="flex:1;min-width:0;">
+                  <input id="questText-${i}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+                  <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                    <button class="qr-btn qr-stepper-btn" data-dir="down" data-idx="${i}">▼</button>
+                    <input id="questReward-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
+                    <button class="qr-btn qr-stepper-btn" data-dir="up" data-idx="${i}">▲</button>
+                    <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
+                    <button class="qr-btn qr-quest-save" data-idx="${i}">💾</button>
+                    <button class="qr-btn qr-btn-sell qr-quest-del" data-idx="${i}">✕</button>
+                    ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
+                  </div>
+                </div>
+              </div>`;
+          })
+          .join("") +
+        `<div class="qr-div">✦ · · · ✦ · · · ✦</div>`;
     } else {
       body =
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>` +
@@ -425,25 +456,95 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
 
     this.shadowRoot.innerHTML = this._shell(
       count > 0 ? icons.questsActive : icons.questsEmpty,
-      `${icons.questsTitle} Active Quests`,
+      `${icons.questsTitle} Active Quests${isAdmin ? " (Admin)" : ""}`,
       count > 0 ? `✦ ${count} quest${count > 1 ? "s" : ""} open ✦` : "✦ All quests complete ✦",
       gold,
       addRow + body
     );
 
-    this.shadowRoot.querySelectorAll(".qr-item").forEach((el) => {
-      el.addEventListener("click", () => {
-        const i = parseInt(el.dataset.idx, 10);
-        const questText = quests[i];
-        const short = questText;
-        if (confirm(`Is quest "${short}" complete, Adventurer?`)) {
-          this._callService("complete_quest", {
-            config_entry_id: entryId,
-            quest_text: questText,
-          });
-        }
+    if (!isAdmin) {
+      this.shadowRoot.querySelectorAll(".qr-item").forEach((el) => {
+        el.addEventListener("click", () => {
+          const i = parseInt(el.dataset.idx, 10);
+          const questText = quests[i];
+          if (confirm(`Is quest "${questText}" complete, Adventurer?`)) {
+            this._callService("complete_quest", {
+              config_entry_id: entryId,
+              quest_text: questText,
+            });
+          }
+        });
       });
-    });
+    } else {
+      this.shadowRoot.querySelectorAll(".qr-stepper-btn").forEach((stepBtn) => {
+        stepBtn.addEventListener("click", () => {
+          const i = parseInt(stepBtn.dataset.idx, 10);
+          const rewardInput = this.shadowRoot.getElementById(`questReward-${i}`);
+          let val = parseInt(rewardInput.value, 10) || 1;
+          val += stepBtn.dataset.dir === "up" ? 1 : -1;
+          rewardInput.value = Math.min(100, Math.max(1, val));
+        });
+      });
+
+      this.shadowRoot.querySelectorAll(".qr-quest-complete").forEach((completeBtn) => {
+        completeBtn.addEventListener("click", () => {
+          const i = parseInt(completeBtn.dataset.idx, 10);
+          const questText = quests[i];
+          if (confirm(`Mark quest "${questText}" as complete and pay out the reward?`)) {
+            this._callService("complete_quest", {
+              config_entry_id: entryId,
+              quest_text: questText,
+            });
+          }
+        });
+      });
+
+      this.shadowRoot.querySelectorAll(".qr-quest-save").forEach((saveBtn) => {
+        saveBtn.addEventListener("click", () => {
+          const i = parseInt(saveBtn.dataset.idx, 10);
+          const questText = quests[i];
+          const textEl = this.shadowRoot.getElementById(`questText-${i}`);
+          const rewardEl = this.shadowRoot.getElementById(`questReward-${i}`);
+          const newText = textEl.value.trim();
+          const reward = Math.min(100, Math.max(1, parseInt(rewardEl.value, 10) || 1));
+          if (!newText) return;
+
+          saveBtn.disabled = true;
+          this._hass
+            .callService("quest_rpg", "update_quest", {
+              config_entry_id: entryId,
+              quest_text: questText,
+              new_text: newText,
+              reward,
+            })
+            .catch((err) => {
+              console.error("[quest-rpg] update_quest FAILED:", err);
+            })
+            .finally(() => {
+              saveBtn.disabled = false;
+            });
+        });
+      });
+
+      this.shadowRoot.querySelectorAll(".qr-quest-del").forEach((delBtn) => {
+        delBtn.addEventListener("click", () => {
+          const i = parseInt(delBtn.dataset.idx, 10);
+          const questText = quests[i];
+          if (!confirm(`Remove quest "${questText}" without paying out?`)) return;
+
+          delBtn.disabled = true;
+          this._hass
+            .callService("quest_rpg", "remove_quest", {
+              config_entry_id: entryId,
+              quest_text: questText,
+            })
+            .catch((err) => {
+              console.error("[quest-rpg] remove_quest FAILED:", err);
+              delBtn.disabled = false;
+            });
+        });
+      });
+    }
 
     const input = this.shadowRoot.getElementById("newTaskInput");
     const addBtn = this.shadowRoot.getElementById("addTaskBtn");
