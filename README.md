@@ -104,7 +104,7 @@ Add these anywhere in your dashboard (`type: custom:...`):
 
 | Card | Config |
 |---|---|
-| `quest-rpg-quests-card` | `gold_entity`, `quests_entity`, `hide_add_task?` |
+| `quest-rpg-quests-card` | `gold_entity`, `quests_entity`, `admin?`, `hide_add_task?` |
 | `quest-rpg-shop-card` | `gold_entity`, `shop_entity` |
 | `quest-rpg-shop-admin-card` | `shop_entity`, `gold_entity` |
 | `quest-rpg-vouchers-card` | `vouchers_entity`, `admin?` |
@@ -116,6 +116,7 @@ Using `theme: pink` gives each card a pink/princess theme instead of the default
 type: custom:quest-rpg-quests-card
 gold_entity: number.quest_rpg_johnny_gold
 quests_entity: sensor.quest_rpg_johnny_quests
+# admin: true   # allows editing of tasks (award, text, timer)
 
 type: custom:quest-rpg-shop-card
 gold_entity: number.quest_rpg_johnny_gold
@@ -239,8 +240,8 @@ STRUCTURE = {
 </details>details>
 
 - When adding a task, you can add a time frame by simply typing it in natural
-  language. E.g. "clean your room before tomorrow 8 am". The quest will be added
-  with a timer. When the timer runs out, the value of the task drops to 1. The
+  language. E.g. "clean your room before tomorrow 8 am". AI will understand to add a
+  timer to the quest. When the timer runs out, the value of the task drops to 1. The
   task can then still be completed in exchange for this minimum amount of coins.
 - Add two cards to the dashboard: one task list with `hide_new_task: true` with the
   `visibility`  set only for the admin, and one task list without `hide_new_task:`
