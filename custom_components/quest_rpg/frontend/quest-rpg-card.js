@@ -454,13 +454,66 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>`;
     }
 
+    const goldRow = isAdmin
+      ? `
+        <div class="qr-t" style="margin-bottom:6px;">🪙 Adjust gold balance</div>
+        <div class="qr-shopadmin-form">
+          <input id="goldAmount" class="qr-add-input qr-shopadmin-num" type="number" min="0" value="${gold ?? ""}" />
+          <button id="goldSaveBtn" class="qr-btn" style="flex:0 0 auto;">💾</button>
+        </div>
+        <div id="goldAdminMsg" class="qr-s" style="margin-top:2px; margin-bottom:10px;"></div>
+        <div class="qr-div">✦ · · · ✦ · · · ✦</div>`
+      : "";
+
     this.shadowRoot.innerHTML = this._shell(
       count > 0 ? icons.questsActive : icons.questsEmpty,
       `${icons.questsTitle} Active Quests${isAdmin ? " (Admin)" : ""}`,
       count > 0 ? `✦ ${count} quest${count > 1 ? "s" : ""} open ✦` : "✦ All quests complete ✦",
       gold,
-      addRow + body
+      goldRow + addRow + body
     );
+
+    if (isAdmin) {
+      const goldAmountInput = this.shadowRoot.getElementById("goldAmount");
+      const goldSaveBtn = this.shadowRoot.getElementById("goldSaveBtn");
+      const goldMsg = this.shadowRoot.getElementById("goldAdminMsg");
+
+      const saveGold = () => {
+        const newValue = parseInt(goldAmountInput.value, 10);
+        if (isNaN(newValue) || newValue < 0) {
+          goldMsg.textContent = "⚠️ Enter a valid amount.";
+          return;
+        }
+        if (!entryId) {
+          goldMsg.textContent = "⚠️ Card misconfigured: no entry_id found on quests_entity/gold_entity.";
+          return;
+        }
+        const delta = newValue - (gold ?? 0);
+        if (delta === 0) return;
+
+        goldSaveBtn.disabled = true;
+        this._hass
+          .callService("quest_rpg", "add_gold", {
+            config_entry_id: entryId,
+            amount: delta,
+          })
+          .then(() => {
+            goldMsg.textContent = "✅ Updated.";
+          })
+          .catch((err) => {
+            console.error("[quest-rpg] add_gold FAILED:", err);
+            goldMsg.textContent = `❌ Could not adjust gold: ${err && err.message ? err.message : err}`;
+          })
+          .finally(() => {
+            goldSaveBtn.disabled = false;
+          });
+      };
+
+      goldSaveBtn.addEventListener("click", saveGold);
+      goldAmountInput.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") saveGold();
+      });
+    }
 
     if (!isAdmin) {
       this.shadowRoot.querySelectorAll(".qr-item").forEach((el) => {
