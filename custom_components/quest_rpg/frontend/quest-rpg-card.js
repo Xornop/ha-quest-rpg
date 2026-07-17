@@ -697,7 +697,9 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     if (!this._hass || !this._config) return;
     const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
-    const entryId = this._entryId(shopEntity, this._entity("gold_entity"));
+    const goldEntity = this._entity("gold_entity");
+    const entryId = this._entryId(shopEntity, goldEntity);
+    const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
     const items = (shopEntity && shopEntity.attributes.quests) || [];
 
     const listRows = items
@@ -722,7 +724,19 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       })
       .join("");
 
+    const goldSection = `
+      <div class="qr-t" style="margin-bottom:6px;">🪙 Adjust gold balance</div>
+      <div class="qr-shopadmin-form">
+        <input id="goldAmount" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Amount ₡" />
+        <button id="goldAddBtn" class="qr-btn" style="flex:0 0 auto;">➕ Add</button>
+        <button id="goldRemoveBtn" class="qr-btn qr-btn-sell" style="flex:0 0 auto;">➖ Remove</button>
+      </div>
+      <div id="goldAdminMsg" class="qr-s" style="margin-top:2px; margin-bottom:10px;"></div>
+      <div class="qr-div">✦ · · · ✦ · · · ✦</div>
+    `;
+
     const body = `
+      ${goldSection}
       <div class="qr-shopadmin-form">
         <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
         <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
@@ -739,9 +753,52 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       icons.shopAdmin,
       "🛠️ Shop Management",
       "✦ Add, edit, or remove reward shop items ✦",
-      null,
+      gold,
       body
     );
+
+    const goldAmountInput = this.shadowRoot.getElementById("goldAmount");
+    const goldAddBtn = this.shadowRoot.getElementById("goldAddBtn");
+    const goldRemoveBtn = this.shadowRoot.getElementById("goldRemoveBtn");
+    const goldMsg = this.shadowRoot.getElementById("goldAdminMsg");
+
+    const adjustGold = (sign) => {
+      const amount = parseInt(goldAmountInput.value, 10);
+      if (!amount || amount <= 0) {
+        goldMsg.textContent = "⚠️ Enter a positive amount.";
+        return;
+      }
+      if (!entryId) {
+        goldMsg.textContent = "⚠️ Card misconfigured: no entry_id found on shop_entity/gold_entity.";
+        return;
+      }
+      goldAddBtn.disabled = true;
+      goldRemoveBtn.disabled = true;
+      this._hass
+        .callService("quest_rpg", "add_gold", {
+          config_entry_id: entryId,
+          amount: sign * amount,
+        })
+        .then(() => {
+          goldMsg.textContent = `✅ ${sign > 0 ? "Added" : "Removed"} ${amount} ₡.`;
+          goldAmountInput.value = "";
+        })
+        .catch((err) => {
+          console.error("[quest-rpg] add_gold FAILED:", err);
+          goldMsg.textContent = `❌ Could not adjust gold: ${err && err.message ? err.message : err}`;
+        })
+        .finally(() => {
+          goldAddBtn.disabled = false;
+          goldRemoveBtn.disabled = false;
+        });
+    };
+
+    goldAddBtn.addEventListener("click", () => adjustGold(1));
+    goldRemoveBtn.addEventListener("click", () => adjustGold(-1));
+    goldAmountInput.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") adjustGold(1);
+    });
+
 
     const nameInput = this.shadowRoot.getElementById("itemName");
     const emojiInput = this.shadowRoot.getElementById("itemEmoji");
