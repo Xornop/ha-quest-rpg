@@ -1,75 +1,184 @@
-"""Constants for the Quest RPG integration."""
+"""Sensor platform for Quest RPG.
 
-DOMAIN = "quest_rpg"
-PLATFORMS = ["number", "todo", "text", "sensor"]
+Three sensors per player, mirroring what the Lovelace card needs. The state
+is just a count; the actual list data lives in the `quests` (and for the
+quest sensor, `due`) attribute.
+"""
+from __future__ import annotations
 
-# Config / options keys
-CONF_PLAYER_NAME = "player_name"
-CONF_AI_TASK_ENTITY_ID = "ai_task_entity_id"
-CONF_QUEST_LANGUAGE = "quest_language"
-CONF_QUEST_CUSTOM_INSTRUCTIONS = "quest_custom_instructions"
-CONF_WHEEL_COST = "wheel_cost"
-CONF_WHEEL_MAX_SPINS = "wheel_max_spins"
-CONF_WHEEL_WINDOW_START = "wheel_window_start"
-CONF_WHEEL_WINDOW_END = "wheel_window_end"
+from datetime import timedelta
 
-DEFAULT_QUEST_LANGUAGE = "English"
-DEFAULT_QUEST_CUSTOM_INSTRUCTIONS = ""
-DEFAULT_WHEEL_MAX_SPINS = 3
-DEFAULT_WHEEL_COST = 10
-DEFAULT_WHEEL_PRIZES = [0, 5, 10, 15, 20, 30]
-DEFAULT_WHEEL_WINDOW_START = "18:30:00"
-DEFAULT_WHEEL_WINDOW_END = "19:30:00"
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_time_interval,
+)
+from homeassistant.util import dt as dt_util
 
-# Runtime storage keys (hass.data[DOMAIN][entry_id][...])
-DATA_TODO_ENTITIES = "todo_entities"
-DATA_NUMBER_ENTITIES = "number_entities"
+from .const import (
+    ATTR_DUE,
+    ATTR_ENTRY_ID,
+    ATTR_PLAYER_NAME,
+    ATTR_QUESTS,
+    CONF_PLAYER_NAME,
+    DOMAIN,
+    SUFFIX_QUESTS,
+    SUFFIX_SHOP_ITEMS,
+    SUFFIX_VOUCHERS,
+)
+from .helpers import due_info
 
-# Entity unique_id suffixes
-SUFFIX_GOLD = "gold"
-SUFFIX_WHEEL_SPINS = "wheel_spins_today"
-SUFFIX_QUESTS = "quests"
-SUFFIX_SHOP_ITEMS = "shop_items"
-SUFFIX_VOUCHERS = "vouchers"
-SUFFIX_NEW_TASK = "new_task"
+REFRESH_INTERVAL = timedelta(seconds=30)
 
-# Attributes exposed on the quest/shop/voucher sensors
-ATTR_QUESTS = "quests"
-ATTR_DUE = "due"
-ATTR_ENTRY_ID = "entry_id"
-ATTR_PLAYER_NAME = "player_name"
 
-# Services
-SERVICE_ADD_TASK = "add_task"
-SERVICE_COMPLETE_QUEST = "complete_quest"
-SERVICE_UPDATE_QUEST = "update_quest"
-SERVICE_REMOVE_QUEST = "remove_quest"
-SERVICE_SPIN_WHEEL = "spin_wheel"
-SERVICE_BUY_ITEM = "buy_item"
-SERVICE_SELL_VOUCHER = "sell_voucher"
-SERVICE_REDEEM_VOUCHER = "redeem_voucher"
-SERVICE_ADD_GOLD = "add_gold"
-SERVICE_ADD_SHOP_ITEM = "add_shop_item"
-SERVICE_REMOVE_SHOP_ITEM = "remove_shop_item"
-SERVICE_UPDATE_SHOP_ITEM = "update_shop_item"
+class _BaseListSensor(SensorEntity):
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_icon = "mdi:scroll"
 
-ATTR_CONFIG_ENTRY_ID = "config_entry_id"
-ATTR_QUEST_TEXT = "quest_text"
-ATTR_QUEST_NEW_TEXT = "new_text"
-ATTR_QUEST_REWARD = "reward"
-ATTR_ITEM_TEXT = "item_text"
-ATTR_VOUCHER_TEXT = "voucher_text"
-ATTR_AMOUNT = "amount"
-ATTR_TASK_TEXT = "task_text"
-ATTR_FULL_REFUND = "full_refund"
-ATTR_ITEM_NAME = "name"
-ATTR_ITEM_EMOJI = "emoji"
-ATTR_ITEM_PRICE = "price"
-ATTR_ITEM_STOCK = "stock"
+    def __init__(
+        self, entry: ConfigEntry, source_suffix: str, name: str, unique_suffix: str
+    ) -> None:
+        self._entry = entry
+        self._source_suffix = source_suffix
+        self._attr_unique_id = f"{entry.entry_id}_{unique_suffix}"
+        self._attr_name = name
+        self._attr_native_value = 0
+        self._attr_extra_state_attributes: dict = {ATTR_QUESTS: []}
 
-# Item text convention: "<name> (₡<price>) (<stock|empty>)" for shop items.
-# Quests carry their gold reward the same way: "<description> (₡<reward>)".
-# The deadline, if any, lives in the todo item's native `due` field - not in
-# the text - since the `todo` integration already supports that natively.
-PRICE_RE = r"₡(\d+)"
-STOCK_RE = r"\(([^₡)]+)\)\s*$"
+    @property
+    def device_info(self):
+        player_name = self._entry.data[CONF_PLAYER_NAME]
+        return {
+            "identifiers": {(DOMAIN, self._entry.entry_id)},
+            "name": f"Quest RPG - {player_name}",
+            "manufacturer": "Xornop",
+            "model": "Quest RPG",
+        }
+
+    def _source_entity(self):
+        return self.hass.data[DOMAIN][self._entry.entry_id]["todo_entities"].get(
+            self._source_suffix
+        )
+
+    def _texts(self) -> list[str]:
+        source = self._source_entity()
+        return source.texts if source else []
+
+    def _recompute(self) -> None:
+        raise NotImplementedError
+
+    def _base_attrs(self) -> dict:
+        return {
+            ATTR_ENTRY_ID: self._entry.entry_id,
+            ATTR_PLAYER_NAME: self._entry.data[CONF_PLAYER_NAME],
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._recompute()
+
+        source = self._source_entity()
+        if source is not None and source.entity_id:
+
+            @callback
+            def _on_source_update(_event=None) -> None:
+                self._recompute()
+                self.async_write_ha_state()
+
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, [source.entity_id], _on_source_update
+                )
+            )
+
+        @callback
+        def _on_todo_updated(event) -> None:
+            if event.data.get("entry_id") != self._entry.entry_id:
+                return
+            if event.data.get("suffix") != self._source_suffix:
+                return
+            self._recompute()
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_todo_updated", _on_todo_updated)
+        )
+
+        self.async_on_remove(
+            async_track_time_interval(
+                self.hass, self._interval_refresh, REFRESH_INTERVAL
+            )
+        )
+
+    @callback
+    def _interval_refresh(self, _now) -> None:
+        self._recompute()
+        self.async_write_ha_state()
+
+
+class ActiveQuestsSensor(_BaseListSensor):
+    """Quest list with live due-date/urgency info for the frontend card."""
+
+    _attr_icon = "mdi:sword-cross"
+
+    def _recompute(self) -> None:
+        source = self._source_entity()
+        items = source.items if source else []
+        now = dt_util.now()
+        texts = [i.summary for i in items if i.summary]
+        due = [
+            {**due_info(i.due, now), "due_iso": i.due.isoformat() if i.due else None}
+            for i in items
+            if i.summary
+        ]
+        self._attr_native_value = len(texts)
+        self._attr_extra_state_attributes = {
+            **self._base_attrs(),
+            ATTR_QUESTS: texts,
+            ATTR_DUE: due,
+        }
+
+
+class ShopItemsSensor(_BaseListSensor):
+    """Passthrough of the shop items todo list, count as state."""
+
+    _attr_icon = "mdi:store"
+
+    def _recompute(self) -> None:
+        texts = self._texts()
+        self._attr_native_value = len(texts)
+        self._attr_extra_state_attributes = {**self._base_attrs(), ATTR_QUESTS: texts}
+
+
+class VouchersSensor(_BaseListSensor):
+    """Passthrough of the purchased-vouchers todo list."""
+
+    _attr_icon = "mdi:ticket-confirmation"
+
+    def _recompute(self) -> None:
+        texts = self._texts()
+        self._attr_native_value = len(texts)
+        self._attr_extra_state_attributes = {**self._base_attrs(), ATTR_QUESTS: texts}
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    quests = ActiveQuestsSensor(entry, SUFFIX_QUESTS, "Quests", "quests_attributes")
+    shop = ShopItemsSensor(
+        entry, SUFFIX_SHOP_ITEMS, "Shop items", "shop_items_attributes"
+    )
+    vouchers = VouchersSensor(
+        entry, SUFFIX_VOUCHERS, "Vouchers", "vouchers_attributes"
+    )
+
+    hass.data[DOMAIN][entry.entry_id]["sensor_entities"] = {
+        SUFFIX_QUESTS: quests,
+        SUFFIX_SHOP_ITEMS: shop,
+        SUFFIX_VOUCHERS: vouchers,
+    }
+    async_add_entities([quests, shop, vouchers])
