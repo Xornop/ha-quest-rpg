@@ -39,7 +39,7 @@ complete_quest:
 
 update_quest:
   name: Update quest
-  description: Changes a quest's description and/or gold reward (keeps its deadline).
+  description: Changes a quest's description, gold reward, and/or deadline.
   fields:
     config_entry_id:
       name: Player
@@ -66,6 +66,12 @@ update_quest:
           min: 1
           max: 100
           mode: box
+    due:
+      name: Deadline
+      description: Optional new deadline (date & time). Leave empty to keep the current deadline.
+      required: false
+      selector:
+        datetime:
 
 remove_quest:
   name: Remove quest
