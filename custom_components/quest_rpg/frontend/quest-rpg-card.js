@@ -205,10 +205,12 @@ const THEME = `
   .qr-add-input::placeholder { color: var(--qr-placeholder-text); }
   .qr-add-btn { background: var(--qr-add-btn-bg); border: none; border-radius: 8px; color: var(--qr-add-btn-text); font-weight: bold; padding: 0 14px; cursor: pointer; }
   .qr-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .qr-shopadmin-form { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px 4px; }
-  .qr-shopadmin-emoji { flex: 0 0 56px; text-align: center; }
-  .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
-  .qr-shopadmin-num { flex: 0 0 110px; }
+  .qr-shopadmin-form { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 4px; }
+  .qr-shopadmin-row { display: flex; align-items: center; gap: 8px; }
+  .qr-shopadmin-emoji { flex: 0 0 40px; text-align: center; padding: 8px 4px; }
+  .qr-shopadmin-name { flex: 1 1 auto; min-width: 0; }
+  .qr-shopadmin-num { flex: 1 1 0; min-width: 0; }
+  .qr-shopadmin-addbtn { flex: 0 0 auto; padding: 8px 14px; }
   .qr-shopadmin-rownum { flex: 0 0 60px; padding: 4px 6px; font-size: 11px; }
   .qr-quest-due-input { flex: 0 0 148px; padding: 4px 6px; font-size: 11px; }
 `;
@@ -565,7 +567,11 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
             reward,
           };
           const dueVal = dueEl.value.trim();
-          if (dueVal) payload.due = dueVal;
+          if (dueVal) {
+            payload.due = dueVal;
+          } else if (due[i] && due[i].has_due) {
+            payload.due = "";
+          }
 
           saveBtn.disabled = true;
           this._hass
@@ -781,12 +787,16 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
 
     const body = `
       <div class="qr-shopadmin-form">
-        <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
-        <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
-        <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
-        <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
+        <div class="qr-shopadmin-row">
+          <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
+          <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
+        </div>
+        <div class="qr-shopadmin-row">
+          <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
+          <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
+          <button id="addItemBtn" class="qr-btn qr-shopadmin-addbtn">➕</button>
+        </div>
       </div>
-      <button id="addItemBtn" class="qr-add-btn" style="width:100%; padding: 8px 0;">➕ Add item to shop</button>
       <div id="shopAdminMsg" class="qr-s" style="margin-top:6px; text-align:center;"></div>
       <div class="qr-div">✦ · · · ✦ · · · ✦</div>
       ${items.length ? listRows : `<div class="qr-empty">🌿 No items in the shop yet</div>`}
