@@ -130,7 +130,11 @@ class ActiveQuestsSensor(_BaseListSensor):
         items = source.items if source else []
         now = dt_util.now()
         texts = [i.summary for i in items if i.summary]
-        due = [due_info(i.due, now) for i in items if i.summary]
+        due = [
+            {**due_info(i.due, now), "due_iso": i.due.isoformat() if i.due else None}
+            for i in items
+            if i.summary
+        ]
         self._attr_native_value = len(texts)
         self._attr_extra_state_attributes = {
             **self._base_attrs(),
