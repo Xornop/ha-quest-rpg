@@ -788,7 +788,7 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     const body = `
       <div class="qr-shopadmin-form">
         <div class="qr-shopadmin-row">
-          <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
+          <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="1" />
           <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
         </div>
         <div class="qr-shopadmin-row">
