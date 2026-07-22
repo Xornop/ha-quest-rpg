@@ -210,7 +210,7 @@ const THEME = `
   .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
   .qr-shopadmin-num { flex: 0 0 110px; }
   .qr-shopadmin-rownum { flex: 0 0 60px; padding: 4px 6px; font-size: 11px; }
-  .qr-stepper-btn { padding: 4px 9px; font-size: 11px; }
+  .qr-quest-due-input { flex: 0 0 148px; padding: 4px 6px; font-size: 11px; }
 `;
 
 const VINE_HEADER =
@@ -419,10 +419,11 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>` +
         quests
           .map((q, i) => {
-            const d = due[i] || { has_due: false, urgent: false, expired: false, timer_text: "" };
+            const d = due[i] || { has_due: false, urgent: false, expired: false, timer_text: "", due_iso: null };
             const roman = i < 10 ? ROMAN[i] : String(i + 1);
             const short = q.replace(/\s*\(₡\d+\)[.!?]*\s*$/, "");
             const reward = d.expired ? 1 : priceOf(q);
+            const dueLocal = (d.due_iso || "").slice(0, 16);
             return `
               <div class="qr-item ${d.urgent || d.expired ? "urgent" : ""}" data-idx="${i}" style="cursor:default; align-items:flex-start;">
                 ${VINES[i % 3]}
@@ -430,11 +431,10 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 <div style="flex:1;min-width:0;">
                   <input id="questText-${i}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
                   <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                    <button class="qr-btn qr-stepper-btn" data-dir="down" data-idx="${i}">▼</button>
+                    <input id="questDue-${i}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${dueLocal}" />
                     <input id="questReward-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
-                    <button class="qr-btn qr-stepper-btn" data-dir="up" data-idx="${i}">▲</button>
-                    <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-quest-save" data-idx="${i}">💾</button>
+                    <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-btn-sell qr-quest-del" data-idx="${i}">✕</button>
                     ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
                   </div>
@@ -534,16 +534,6 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         });
       });
     } else {
-      this.shadowRoot.querySelectorAll(".qr-stepper-btn").forEach((stepBtn) => {
-        stepBtn.addEventListener("click", () => {
-          const i = parseInt(stepBtn.dataset.idx, 10);
-          const rewardInput = this.shadowRoot.getElementById(`questReward-${i}`);
-          let val = parseInt(rewardInput.value, 10) || 1;
-          val += stepBtn.dataset.dir === "up" ? 1 : -1;
-          rewardInput.value = Math.min(100, Math.max(1, val));
-        });
-      });
-
       this.shadowRoot.querySelectorAll(".qr-quest-complete").forEach((completeBtn) => {
         completeBtn.addEventListener("click", () => {
           const i = parseInt(completeBtn.dataset.idx, 10);
@@ -563,18 +553,23 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
           const questText = quests[i];
           const textEl = this.shadowRoot.getElementById(`questText-${i}`);
           const rewardEl = this.shadowRoot.getElementById(`questReward-${i}`);
+          const dueEl = this.shadowRoot.getElementById(`questDue-${i}`);
           const newText = textEl.value.trim();
           const reward = Math.min(100, Math.max(1, parseInt(rewardEl.value, 10) || 1));
           if (!newText) return;
 
+          const payload = {
+            config_entry_id: entryId,
+            quest_text: questText,
+            new_text: newText,
+            reward,
+          };
+          const dueVal = dueEl.value.trim();
+          if (dueVal) payload.due = dueVal;
+
           saveBtn.disabled = true;
           this._hass
-            .callService("quest_rpg", "update_quest", {
-              config_entry_id: entryId,
-              quest_text: questText,
-              new_text: newText,
-              reward,
-            })
+            .callService("quest_rpg", "update_quest", payload)
             .catch((err) => {
               console.error("[quest-rpg] update_quest FAILED:", err);
             })
