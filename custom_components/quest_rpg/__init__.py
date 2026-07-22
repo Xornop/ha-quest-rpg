@@ -32,6 +32,7 @@ from .const import (
     ATTR_ITEM_TEXT,
     ATTR_QUEST_NEW_TEXT,
     ATTR_QUEST_REWARD,
+    ATTR_QUEST_DUE,
     ATTR_QUEST_TEXT,
     ATTR_TASK_TEXT,
     ATTR_VOUCHER_TEXT,
@@ -356,7 +357,15 @@ def _async_register_services(hass: HomeAssistant) -> None:
         reward = int(call.data[ATTR_QUEST_REWARD])
 
         full_new_text = f"{new_text} (₡{reward})"
-        _todo(hass, entry_id, SUFFIX_QUESTS).rename_text_item(quest_text, full_new_text)
+        quests_entity = _todo(hass, entry_id, SUFFIX_QUESTS)
+
+        due = call.data.get(ATTR_QUEST_DUE)
+        if due is not None:
+            if due.tzinfo is None:
+                due = dt_util.as_local(due)
+            quests_entity.rename_text_item(quest_text, full_new_text, due=due)
+        else:
+            quests_entity.rename_text_item(quest_text, full_new_text)
 
     async def handle_remove_quest(call: ServiceCall) -> None:
         entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
@@ -520,6 +529,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_QUEST_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_NEW_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_REWARD): vol.Coerce(int),
+                vol.Optional(ATTR_QUEST_DUE): cv.datetime,
             }
         ),
     )
