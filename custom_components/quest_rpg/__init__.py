@@ -32,6 +32,7 @@ from .const import (
     ATTR_ITEM_TEXT,
     ATTR_QUEST_NEW_TEXT,
     ATTR_QUEST_REWARD,
+    ATTR_QUEST_DUE,
     ATTR_QUEST_TEXT,
     ATTR_TASK_TEXT,
     ATTR_VOUCHER_TEXT,
@@ -356,7 +357,17 @@ def _async_register_services(hass: HomeAssistant) -> None:
         reward = int(call.data[ATTR_QUEST_REWARD])
 
         full_new_text = f"{new_text} (₡{reward})"
-        _todo(hass, entry_id, SUFFIX_QUESTS).rename_text_item(quest_text, full_new_text)
+        quests_entity = _todo(hass, entry_id, SUFFIX_QUESTS)
+
+        if ATTR_QUEST_DUE in call.data:
+            due = call.data[ATTR_QUEST_DUE]
+            if due == "" or due is None:
+                due = None
+            elif due.tzinfo is None:
+                due = dt_util.as_local(due)
+            quests_entity.rename_text_item(quest_text, full_new_text, due=due)
+        else:
+            quests_entity.rename_text_item(quest_text, full_new_text)
 
     async def handle_remove_quest(call: ServiceCall) -> None:
         entry_id = call.data[ATTR_CONFIG_ENTRY_ID]
@@ -487,9 +498,10 @@ def _async_register_services(hass: HomeAssistant) -> None:
         price = int(call.data[ATTR_ITEM_PRICE])
         stock = call.data.get(ATTR_ITEM_STOCK)
         stock = int(stock) if stock not in (None, "") else None
+        new_name = (call.data.get(ATTR_ITEM_NAME) or "").strip()
 
         shop_entity = _todo(hass, entry_id, SUFFIX_SHOP_ITEMS)
-        name = strip_price_and_stock(item_text)
+        name = new_name or strip_price_and_stock(item_text)
         new_text = with_stock(name, price, stock)
         shop_entity.rename_text_item(item_text, new_text)
 
@@ -519,6 +531,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_QUEST_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_NEW_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_REWARD): vol.Coerce(int),
+                vol.Optional(ATTR_QUEST_DUE): vol.Any(cv.datetime, ""),
             }
         ),
     )
@@ -598,6 +611,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
             {
                 **entry_id_schema,
                 vol.Required(ATTR_ITEM_TEXT): cv.string,
+                vol.Optional(ATTR_ITEM_NAME): cv.string,
                 vol.Required(ATTR_ITEM_PRICE): vol.Coerce(int),
                 vol.Optional(ATTR_ITEM_STOCK): vol.Any(vol.Coerce(int), None, ""),
             }

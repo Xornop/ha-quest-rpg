@@ -42,6 +42,8 @@ SUPPORTED_FEATURES = (
     | TodoListEntityFeature.DELETE_TODO_ITEM
 )
 
+_UNSET = object()
+
 
 @dataclass
 class _TodoExtraStoredData(ExtraStoredData):
@@ -180,7 +182,7 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
         self._attr_todo_items = items
         self._persist()
 
-    def rename_text_item(self, old_text: str, new_text: str) -> None:
+    def rename_text_item(self, old_text: str, new_text: str, due: Any = _UNSET) -> None:
         items = list(self._attr_todo_items or [])
         for idx, existing in enumerate(items):
             if existing.summary == old_text:
@@ -189,7 +191,7 @@ class QuestRpgTodoListEntity(TodoListEntity, RestoreEntity):
                     uid=existing.uid,
                     status=existing.status,
                     description=existing.description,
-                    due=existing.due,
+                    due=existing.due if due is _UNSET else due,
                 )
                 break
         self._attr_todo_items = items

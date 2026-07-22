@@ -175,12 +175,22 @@ const THEME = `
   .qr-header-sub { font-size: 12px; color: var(--qr-sub-text); margin-top: 4px; }
   .qr-gold { position: absolute; top: 12px; left: 14px; display: flex; align-items: center; gap: 5px; background: var(--qr-badge-bg); border: 1px solid var(--qr-accent); border-radius: 99px; padding: 4px 10px 4px 7px; }
   .qr-gold-amount { font-size: 12px; font-weight: 500; color: var(--qr-accent-text); }
+  .qr-gold-editable { padding-right: 6px; gap: 4px; }
+  .qr-gold-input { width: 30px; padding: 0; margin: 0; border: none; background: transparent; font-family: inherit; text-align: right; outline: none; -moz-appearance: textfield; }
+  .qr-gold-input::-webkit-outer-spin-button, .qr-gold-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .qr-gold-input.qr-gold-input-error { color: var(--qr-btn-sell-border); }
+  .qr-gold-suffix { margin-left: -2px; }
+  .qr-gold-save-btn { background: none; border: none; cursor: pointer; font-size: 10px; padding: 0; margin-left: 1px; line-height: 1; opacity: 0.55; }
+  .qr-gold-save-btn:hover { opacity: 1; }
+  .qr-gold-save-btn:disabled { opacity: 0.3; cursor: default; }
   .qr-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
   .qr-div { font-size: 11px; text-align: center; color: var(--qr-div-color); letter-spacing: 6px; margin: 2px 0; }
   .qr-item { background: var(--qr-item-bg); border: 1px solid var(--qr-item-border); border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-left: 3px solid var(--qr-accent); position: relative; overflow: hidden; }
   .qr-item.urgent { border-left-color: var(--qr-urgent-border); }
   .qr-item.disabled { opacity: 0.4; cursor: not-allowed; border-left-color: var(--qr-item-border); }
   .qr-n { width: 32px; height: 32px; border-radius: 50%; background: var(--qr-badge-bg); border: 1px solid var(--qr-badge-border); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--qr-accent-text); flex-shrink: 0; }
+  .qr-n-input { text-align: center; padding: 0; margin: 0; outline: none; font-family: inherit; box-sizing: border-box; }
+  .qr-n-input:focus { border-color: var(--qr-accent); }
   .qr-t { font-size: 13px; font-weight: 500; color: var(--qr-item-text); line-height: 1.5; }
   .qr-s { font-size: 11px; color: var(--qr-item-sub-text); margin-top: 4px; }
   .qr-b { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--qr-badge-bg); border: 0.5px solid var(--qr-badge-border); color: var(--qr-badge-text); margin-left: 6px; }
@@ -195,12 +205,14 @@ const THEME = `
   .qr-add-input::placeholder { color: var(--qr-placeholder-text); }
   .qr-add-btn { background: var(--qr-add-btn-bg); border: none; border-radius: 8px; color: var(--qr-add-btn-text); font-weight: bold; padding: 0 14px; cursor: pointer; }
   .qr-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .qr-shopadmin-form { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px 4px; }
-  .qr-shopadmin-emoji { flex: 0 0 56px; text-align: center; }
-  .qr-shopadmin-name { flex: 1 1 160px; min-width: 120px; }
-  .qr-shopadmin-num { flex: 0 0 110px; }
+  .qr-shopadmin-form { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 4px; }
+  .qr-shopadmin-row { display: flex; align-items: center; gap: 8px; }
+  .qr-shopadmin-emoji { flex: 0 0 40px; text-align: center; padding: 8px 4px; }
+  .qr-shopadmin-name { flex: 1 1 auto; min-width: 0; }
+  .qr-shopadmin-num { flex: 1 1 0; min-width: 0; }
+  .qr-shopadmin-addbtn { flex: 0 0 auto; padding: 8px 14px; }
   .qr-shopadmin-rownum { flex: 0 0 60px; padding: 4px 6px; font-size: 11px; }
-  .qr-stepper-btn { padding: 4px 9px; font-size: 11px; }
+  .qr-quest-due-input { flex: 0 0 148px; padding: 4px 6px; font-size: 11px; }
 `;
 
 const VINE_HEADER =
@@ -351,13 +363,19 @@ class QuestRpgBaseCard extends HTMLElement {
     this._hass.callService("quest_rpg", service, data);
   }
 
-  _shell(headerIcon, title, sub, gold, bodyHtml) {
+  _shell(headerIcon, title, sub, gold, bodyHtml, goldEditable) {
+    const goldHtml =
+      gold === null
+        ? ""
+        : goldEditable
+        ? `<div class="qr-gold qr-gold-editable"><span>🪙</span><input id="goldAmount" class="qr-gold-amount qr-gold-input" type="number" min="0" value="${gold}" /><span class="qr-gold-amount qr-gold-suffix">₡</span><button id="goldSaveBtn" class="qr-gold-save-btn" title="Save">💾</button></div>`
+        : `<div class="qr-gold"><span>🪙</span><span class="qr-gold-amount">${gold} ₡</span></div>`;
     return `
       <style>${themeVarsCss(this._theme())}${THEME}</style>
       <div class="qr-card">
         <div class="qr-header">
           ${VINE_HEADER}
-          ${gold !== null ? `<div class="qr-gold"><span>🪙</span><span class="qr-gold-amount">${gold} ₡</span></div>` : ""}
+          ${goldHtml}
           <span class="qr-header-icon">${headerIcon}</span>
           <div class="qr-header-title">${title}</div>
           <div class="qr-header-sub">${sub}</div>
@@ -403,10 +421,11 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         `<div class="qr-div">✦ · · · ✦ · · · ✦</div>` +
         quests
           .map((q, i) => {
-            const d = due[i] || { has_due: false, urgent: false, expired: false, timer_text: "" };
+            const d = due[i] || { has_due: false, urgent: false, expired: false, timer_text: "", due_iso: null };
             const roman = i < 10 ? ROMAN[i] : String(i + 1);
             const short = q.replace(/\s*\(₡\d+\)[.!?]*\s*$/, "");
             const reward = d.expired ? 1 : priceOf(q);
+            const dueLocal = (d.due_iso || "").slice(0, 16);
             return `
               <div class="qr-item ${d.urgent || d.expired ? "urgent" : ""}" data-idx="${i}" style="cursor:default; align-items:flex-start;">
                 ${VINES[i % 3]}
@@ -414,11 +433,10 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 <div style="flex:1;min-width:0;">
                   <input id="questText-${i}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
                   <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                    <button class="qr-btn qr-stepper-btn" data-dir="down" data-idx="${i}">▼</button>
+                    <input id="questDue-${i}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${dueLocal}" />
                     <input id="questReward-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
-                    <button class="qr-btn qr-stepper-btn" data-dir="up" data-idx="${i}">▲</button>
-                    <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-quest-save" data-idx="${i}">💾</button>
+                    <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-btn-sell qr-quest-del" data-idx="${i}">✕</button>
                     ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
                   </div>
@@ -459,8 +477,50 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
       `${icons.questsTitle} Active Quests${isAdmin ? " (Admin)" : ""}`,
       count > 0 ? `✦ ${count} quest${count > 1 ? "s" : ""} open ✦` : "✦ All quests complete ✦",
       gold,
-      addRow + body
+      addRow + body,
+      isAdmin
     );
+
+    if (isAdmin) {
+      const goldAmountInput = this.shadowRoot.getElementById("goldAmount");
+      const goldSaveBtn = this.shadowRoot.getElementById("goldSaveBtn");
+
+      const saveGold = () => {
+        const newValue = parseInt(goldAmountInput.value, 10);
+        if (isNaN(newValue) || newValue < 0) {
+          goldAmountInput.classList.add("qr-gold-input-error");
+          return;
+        }
+        goldAmountInput.classList.remove("qr-gold-input-error");
+        if (!entryId) {
+          console.error("[quest-rpg] add_gold: no entry_id found on quests_entity/gold_entity.");
+          return;
+        }
+        const delta = newValue - (gold ?? 0);
+        if (delta === 0) return;
+
+        goldSaveBtn.disabled = true;
+        this._hass
+          .callService("quest_rpg", "add_gold", {
+            config_entry_id: entryId,
+            amount: delta,
+          })
+          .catch((err) => {
+            console.error("[quest-rpg] add_gold FAILED:", err);
+            goldAmountInput.classList.add("qr-gold-input-error");
+          })
+          .finally(() => {
+            goldSaveBtn.disabled = false;
+          });
+      };
+
+      if (goldAmountInput && goldSaveBtn) {
+        goldSaveBtn.addEventListener("click", saveGold);
+        goldAmountInput.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") saveGold();
+        });
+      }
+    }
 
     if (!isAdmin) {
       this.shadowRoot.querySelectorAll(".qr-item").forEach((el) => {
@@ -476,16 +536,6 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         });
       });
     } else {
-      this.shadowRoot.querySelectorAll(".qr-stepper-btn").forEach((stepBtn) => {
-        stepBtn.addEventListener("click", () => {
-          const i = parseInt(stepBtn.dataset.idx, 10);
-          const rewardInput = this.shadowRoot.getElementById(`questReward-${i}`);
-          let val = parseInt(rewardInput.value, 10) || 1;
-          val += stepBtn.dataset.dir === "up" ? 1 : -1;
-          rewardInput.value = Math.min(100, Math.max(1, val));
-        });
-      });
-
       this.shadowRoot.querySelectorAll(".qr-quest-complete").forEach((completeBtn) => {
         completeBtn.addEventListener("click", () => {
           const i = parseInt(completeBtn.dataset.idx, 10);
@@ -505,18 +555,27 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
           const questText = quests[i];
           const textEl = this.shadowRoot.getElementById(`questText-${i}`);
           const rewardEl = this.shadowRoot.getElementById(`questReward-${i}`);
+          const dueEl = this.shadowRoot.getElementById(`questDue-${i}`);
           const newText = textEl.value.trim();
           const reward = Math.min(100, Math.max(1, parseInt(rewardEl.value, 10) || 1));
           if (!newText) return;
 
+          const payload = {
+            config_entry_id: entryId,
+            quest_text: questText,
+            new_text: newText,
+            reward,
+          };
+          const dueVal = dueEl.value.trim();
+          if (dueVal) {
+            payload.due = dueVal;
+          } else if (due[i] && due[i].has_due) {
+            payload.due = "";
+          }
+
           saveBtn.disabled = true;
           this._hass
-            .callService("quest_rpg", "update_quest", {
-              config_entry_id: entryId,
-              quest_text: questText,
-              new_text: newText,
-              reward,
-            })
+            .callService("quest_rpg", "update_quest", payload)
             .catch((err) => {
               console.error("[quest-rpg] update_quest FAILED:", err);
             })
@@ -697,21 +756,25 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
     if (!this._hass || !this._config) return;
     const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
-    const entryId = this._entryId(shopEntity, this._entity("gold_entity"));
+    const goldEntity = this._entity("gold_entity");
+    const entryId = this._entryId(shopEntity, goldEntity);
+    const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
     const items = (shopEntity && shopEntity.attributes.quests) || [];
 
     const listRows = items
       .map((item, i) => {
         const naam = nameOnly(item);
+        const emoji = firstWord(naam);
+        const nameText = restWords(naam).trim();
         const prijs = priceOf(item);
         const stock = stockOf(item);
         return `
-          <div class="qr-item" data-idx="${i}" style="cursor:default;">
+          <div class="qr-item" data-idx="${i}" style="cursor:default; align-items:flex-start;">
             ${VINES[i % 3]}
-            <div class="qr-n">${firstWord(naam)}</div>
+            <input id="rowEmoji-${i}" class="qr-n qr-n-input" type="text" maxlength="8" value="${emoji.replace(/"/g, "&quot;")}" />
             <div style="flex:1;min-width:0;">
-              <div class="qr-t">${restWords(naam)}</div>
-              <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+              <input id="rowName-${i}" class="qr-add-input" type="text" value="${nameText.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+              <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
                 ₡<input id="rowPrice-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
                 <input id="rowStock-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
                 <button class="qr-btn qr-shopadmin-save" data-idx="${i}">💾</button>
@@ -724,12 +787,16 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
 
     const body = `
       <div class="qr-shopadmin-form">
-        <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="8" />
-        <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
-        <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
-        <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
+        <div class="qr-shopadmin-row">
+          <input id="itemEmoji" class="qr-add-input qr-shopadmin-emoji" type="text" placeholder="🎫" maxlength="1" />
+          <input id="itemName" class="qr-add-input qr-shopadmin-name" type="text" placeholder="Item name..." />
+        </div>
+        <div class="qr-shopadmin-row">
+          <input id="itemPrice" class="qr-add-input qr-shopadmin-num" type="number" min="1" placeholder="Price ₡" />
+          <input id="itemStock" class="qr-add-input qr-shopadmin-num" type="number" min="0" placeholder="Stock (blank=∞)" />
+          <button id="addItemBtn" class="qr-btn qr-shopadmin-addbtn">➕</button>
+        </div>
       </div>
-      <button id="addItemBtn" class="qr-add-btn" style="width:100%; padding: 8px 0;">➕ Add item to shop</button>
       <div id="shopAdminMsg" class="qr-s" style="margin-top:6px; text-align:center;"></div>
       <div class="qr-div">✦ · · · ✦ · · · ✦</div>
       ${items.length ? listRows : `<div class="qr-empty">🌿 No items in the shop yet</div>`}
@@ -739,7 +806,7 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       icons.shopAdmin,
       "🛠️ Shop Management",
       "✦ Add, edit, or remove reward shop items ✦",
-      null,
+      gold,
       body
     );
 
@@ -803,14 +870,19 @@ class QuestRpgShopAdminCard extends QuestRpgBaseCard {
       saveBtn.addEventListener("click", () => {
         const i = parseInt(saveBtn.dataset.idx, 10);
         const itemText = items[i];
+        const emojiEl = this.shadowRoot.getElementById(`rowEmoji-${i}`);
+        const nameEl = this.shadowRoot.getElementById(`rowName-${i}`);
         const priceEl = this.shadowRoot.getElementById(`rowPrice-${i}`);
         const stockEl = this.shadowRoot.getElementById(`rowStock-${i}`);
+        const newEmoji = emojiEl.value.trim();
+        const newName = nameEl.value.trim();
         const price = parseInt(priceEl.value, 10);
-        if (!price || price <= 0) {
-          msg.textContent = "⚠️ Price must be a positive number.";
+        if (!newName || !price || price <= 0) {
+          msg.textContent = "⚠️ Name and price must be filled in.";
           return;
         }
-        const data = { config_entry_id: entryId, item_text: itemText, price };
+        const combinedName = newEmoji ? `${newEmoji} ${newName}` : newName;
+        const data = { config_entry_id: entryId, item_text: itemText, name: combinedName, price };
         const stockRaw = stockEl.value.trim();
         if (stockRaw !== "") data.stock = parseInt(stockRaw, 10);
 

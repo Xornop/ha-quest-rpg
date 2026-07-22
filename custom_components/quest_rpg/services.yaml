@@ -39,7 +39,7 @@ complete_quest:
 
 update_quest:
   name: Update quest
-  description: Changes a quest's description and/or gold reward (keeps its deadline).
+  description: Changes a quest's description, gold reward, and/or deadline.
   fields:
     config_entry_id:
       name: Player
@@ -66,6 +66,12 @@ update_quest:
           min: 1
           max: 100
           mode: box
+    due:
+      name: Deadline
+      description: Optional new deadline (date & time). Leave empty to keep the current deadline, or clear the field in the card to remove it.
+      required: false
+      selector:
+        datetime:
 
 remove_quest:
   name: Remove quest
@@ -233,7 +239,7 @@ remove_shop_item:
 
 update_shop_item:
   name: Update shop item
-  description: Changes the price and/or stock of an existing shop item.
+  description: Changes the name, price and/or stock of an existing shop item.
   fields:
     config_entry_id:
       name: Player
@@ -245,6 +251,12 @@ update_shop_item:
       name: Item text
       description: The exact shop item text as shown on the shop sensor.
       required: true
+      selector:
+        text:
+    name:
+      name: New name
+      description: Leave empty to keep the current name.
+      required: false
       selector:
         text:
     price:
