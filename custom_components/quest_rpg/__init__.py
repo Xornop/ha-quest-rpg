@@ -359,9 +359,11 @@ def _async_register_services(hass: HomeAssistant) -> None:
         full_new_text = f"{new_text} (₡{reward})"
         quests_entity = _todo(hass, entry_id, SUFFIX_QUESTS)
 
-        due = call.data.get(ATTR_QUEST_DUE)
-        if due is not None:
-            if due.tzinfo is None:
+        if ATTR_QUEST_DUE in call.data:
+            due = call.data[ATTR_QUEST_DUE]
+            if due == "" or due is None:
+                due = None
+            elif due.tzinfo is None:
                 due = dt_util.as_local(due)
             quests_entity.rename_text_item(quest_text, full_new_text, due=due)
         else:
@@ -529,7 +531,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
                 vol.Required(ATTR_QUEST_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_NEW_TEXT): cv.string,
                 vol.Required(ATTR_QUEST_REWARD): vol.Coerce(int),
-                vol.Optional(ATTR_QUEST_DUE): cv.datetime,
+                vol.Optional(ATTR_QUEST_DUE): vol.Any(cv.datetime, ""),
             }
         ),
     )
