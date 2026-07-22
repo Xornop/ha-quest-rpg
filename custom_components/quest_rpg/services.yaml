@@ -68,7 +68,7 @@ update_quest:
           mode: box
     due:
       name: Deadline
-      description: Optional new deadline (date & time). Leave empty to keep the current deadline.
+      description: Optional new deadline (date & time). Leave empty to keep the current deadline, or clear the field in the card to remove it.
       required: false
       selector:
         datetime:
