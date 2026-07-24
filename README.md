@@ -20,12 +20,13 @@ through the UI. No manual helpers, no template sensors, no hardcoded names.
   doesn't need its own API key.
 - **A fortune wheel** with a configurable cost, prize table, and a daily
   *time window* during which it's spinnable.
-- **A reward shop** with stock tracking, managed through its own card (add,
-  edit price/stock, or remove items - no YAML editing).
+- **A reward shop** with stock tracking, managed straight from the same
+  card via an `admin: true` toggle (add, edit price/stock, or remove items -
+  no YAML editing).
 - **A voucher system** so purchases can be redeemed later, with an
   admin/player distinction: players sell back at half price, admins can
   redeem in full or sell back at full price.
-- **Five bundled Lovelace cards**, dark parchment/RPG themed, fully
+- **Four bundled Lovelace cards**, dark parchment/RPG themed, fully
   config-driven instead of hardcoded to one person's entities.
 
 ## Requirements
@@ -90,9 +91,9 @@ For a player named "Johnny":
   card's built-in input box calls the same logic directly and doesn't need
   this entity on your dashboard at all
 - `todo.quest_rpg_johnny_quests`
-- `todo.quest_rpg_johnny_shop_items` - manage through the shop-management
-  card, or edit directly as `<emoji> <name> (₡price) (stock)`, e.g.
-  `🍦 Ice cream trip (₡40) (2)`; blank/`(∞)` stock = unlimited
+- `todo.quest_rpg_johnny_shop_items` - manage through the shop card's
+  `admin: true` mode, or edit directly as `<emoji> <name> (₡price) (stock)`,
+  e.g. `🍦 Ice cream trip (₡40) (2)`; blank/`(∞)` stock = unlimited
 - `todo.quest_rpg_johnny_vouchers`
 - `sensor.quest_rpg_johnny_quests` /
   `..._shop_items` / `..._vouchers` - what the cards
@@ -105,10 +106,13 @@ Add these anywhere in your dashboard (`type: custom:...`):
 | Card | Config |
 |---|---|
 | `quest-rpg-quests-card` | `gold_entity`, `quests_entity`, `admin?`, `hide_add_task?` |
-| `quest-rpg-shop-card` | `gold_entity`, `shop_entity` |
-| `quest-rpg-shop-admin-card` | `shop_entity`, `gold_entity` |
+| `quest-rpg-shop-card` | `gold_entity`, `shop_entity`, `admin?` |
 | `quest-rpg-vouchers-card` | `vouchers_entity`, `admin?` |
 | `quest-rpg-wheel-card` | `gold_entity`, `spins_entity`, `cost?`, `prizes?`, `max_spins?` |
+
+With `admin: true`, the shop card switches from the buyable listing to a
+management form (add, edit price/stock, or remove items) - the same
+pattern used by the quests card's `admin: true`.
 
 Using `theme: pink` gives each card a pink/princess theme instead of the default adventure theme.
 
@@ -121,10 +125,7 @@ quests_entity: sensor.quest_rpg_johnny_quests
 type: custom:quest-rpg-shop-card
 gold_entity: number.quest_rpg_johnny_gold
 shop_entity: sensor.quest_rpg_johnny_shop_items
-
-type: custom:quest-rpg-shop-admin-card
-shop_entity: sensor.quest_rpg_johnny_shop_items
-gold_entity: number.quest_rpg_johnny_gold
+# admin: true   # switches to add/edit/remove shop management instead of buying
 
 type: custom:quest-rpg-vouchers-card
 vouchers_entity: sensor.quest_rpg_johnny_vouchers
@@ -146,23 +147,24 @@ need to look it up yourself.
 |---|---|
 | **Quests** - active quest list, tap a quest to complete it and collect the gold reward. | ![Quests card](docs/screenshot-quests.png) |
 | **Shop** - reward shop, tap an item to buy it. | ![Shop card](docs/screenshot-shop.png) |
-| **Shop Management** *(admin)* - add, edit price/stock, or remove shop items. | ![Shop management card](docs/screenshot-shop-admin.png) |
+| **Shop** *(admin: true)* - add, edit price/stock, or remove shop items. | ![Shop management card](docs/screenshot-shop-admin.png) |
 | **Vouchers** *(player view)* - sell purchased vouchers back for half price. | ![Vouchers card, player view](docs/screenshot-vouchers-player.png) |
 | **Vouchers** *(admin view, `admin: true`)* - redeem vouchers, or sell back at full price. | ![Vouchers card, admin view](docs/screenshot-vouchers-admin.png) |
 | **Wheel of Fortune** - daily spin within a configurable time window. | ![Wheel of Fortune card](docs/screenshot-wheel.png) |
 
 ### Admin-only cards
 
-The **Shop Management** card and the **Vouchers** card with `admin: true`
-set are meant for whoever manages the game (a parent, typically), not the
-player. Home Assistant doesn't have a built-in "admin" concept for cards,
-so restrict visibility yourself with the card's `visibility` option,
-filtered to your own HA user:
+The shop card with `admin: true` set, and the vouchers card with
+`admin: true` set, are meant for whoever manages the game (a parent,
+typically), not the player. Home Assistant doesn't have a built-in "admin"
+concept for cards, so restrict visibility yourself with the card's
+`visibility` option, filtered to your own HA user:
 
 ```yaml
-type: custom:quest-rpg-shop-admin-card
+type: custom:quest-rpg-shop-card
 shop_entity: sensor.quest_rpg_johnny_shop_items
 gold_entity: number.quest_rpg_johnny_gold
+admin: true
 visibility:
   - condition: user
     users:
@@ -177,10 +179,10 @@ visibility:
       - <your Home Assistant user id>
 ```
 
-Put the player-facing `quest-rpg-vouchers-card` (without `admin: true`) on
-the player's own view instead. You can find a user's ID under
-**Settings → People → (user) → Advanced** (with Advanced Mode enabled on
-your own profile).
+Put the player-facing `quest-rpg-shop-card` (without `admin: true`) and
+`quest-rpg-vouchers-card` (without `admin: true`) on the player's own view
+instead. You can find a user's ID under **Settings → People → (user) →
+Advanced** (with Advanced Mode enabled on your own profile).
 
 ## Tips
 
@@ -237,7 +239,7 @@ STRUCTURE = {
     },
 }
 ```
-</details>details>
+</details>
 
 - When adding a task, you can add a time frame by simply typing it in natural
   language. E.g. "clean your room before tomorrow 8 am". AI will understand to add a

@@ -1,12 +1,15 @@
 /**
  * Quest RPG Lovelace cards.
  *
- * Five custom elements, all sharing the same parchment/gold RPG theme:
- *   custom:quest-rpg-quests-card      { gold_entity, quests_entity, hide_add_task? }
- *   custom:quest-rpg-shop-card        { gold_entity, shop_entity }
- *   custom:quest-rpg-shop-admin-card  { shop_entity }
+ * Four custom elements, all sharing the same parchment/gold RPG theme:
+ *   custom:quest-rpg-quests-card      { gold_entity, quests_entity, hide_add_task?, admin? }
+ *   custom:quest-rpg-shop-card        { gold_entity, shop_entity, admin? }
  *   custom:quest-rpg-vouchers-card    { vouchers_entity, admin? }
  *   custom:quest-rpg-wheel-card       { gold_entity, spins_entity, cost?, prizes?, max_spins? }
+ *
+ * The shop card doubles as shop management: with admin: true it renders the
+ * add/edit/remove item form instead of the buyable listing (same pattern as
+ * the admin flag on the quests card).
  *
  * Every write goes through the quest_rpg.* services - no direct entity
  * mutation, so there is one source of truth in Python. cost/prizes/max_spins
@@ -646,7 +649,7 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
 }
 
 // ---------------------------------------------------------------------
-// Shop card
+// Shop card - buyable listing, or (admin: true) shop management form
 // ---------------------------------------------------------------------
 class QuestRpgShopCard extends QuestRpgBaseCard {
   connectedCallback() {
@@ -667,6 +670,14 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
 
   _render() {
     if (!this._hass || !this._config) return;
+    if (this._config.admin) {
+      this._renderAdmin();
+    } else {
+      this._renderShop();
+    }
+  }
+
+  _renderShop() {
     const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
     const goldEntity = this._entity("gold_entity");
@@ -746,14 +757,8 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
       });
     });
   }
-}
 
-// ---------------------------------------------------------------------
-// Shop admin card - add, edit, and remove reward shop items
-// ---------------------------------------------------------------------
-class QuestRpgShopAdminCard extends QuestRpgBaseCard {
-  _render() {
-    if (!this._hass || !this._config) return;
+  _renderAdmin() {
     const icons = this._icons();
     const shopEntity = this._entity("shop_entity");
     const goldEntity = this._entity("gold_entity");
@@ -1175,8 +1180,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
 
 const QUEST_RPG_CARDS = [
   ["quest-rpg-quests-card", QuestRpgQuestsCard, "Quest RPG - Quests", "Active quests with reward and deadline."],
-  ["quest-rpg-shop-card", QuestRpgShopCard, "Quest RPG - Shop", "Reward shop."],
-  ["quest-rpg-shop-admin-card", QuestRpgShopAdminCard, "Quest RPG - Shop Management", "Add new items to the reward shop."],
+  ["quest-rpg-shop-card", QuestRpgShopCard, "Quest RPG - Shop", "Reward shop (set admin: true for shop management)."],
   ["quest-rpg-vouchers-card", QuestRpgVouchersCard, "Quest RPG - Vouchers", "Purchased, not-yet-redeemed vouchers."],
   ["quest-rpg-wheel-card", QuestRpgWheelCard, "Quest RPG - Wheel of Fortune", "Daily wheel of fortune."],
 ];
