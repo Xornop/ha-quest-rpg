@@ -262,6 +262,23 @@ function isWithinWindow(startStr, endStr, now) {
   return cur >= start || cur <= end; // window wraps past midnight
 }
 
+/**
+ * Stable DOM-id keys for list rows. Input ids must NOT be index-based:
+ * _forceRender() restores input values by id, so after a delete the shifted
+ * rows would get the old rows' values back (the deleted row seems to stay
+ * while the bottom one vanishes). Keying on the row's own text avoids that.
+ */
+function stableKeys(list) {
+  const seen = {};
+  return list.map((text) => {
+    let h = 5381;
+    for (let c = 0; c < text.length; c++) h = ((h * 33) ^ text.charCodeAt(c)) >>> 0;
+    const base = h.toString(36);
+    seen[base] = (seen[base] || 0) + 1;
+    return seen[base] > 1 ? `${base}-${seen[base]}` : base;
+  });
+}
+
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
 class QuestRpgBaseCard extends HTMLElement {
@@ -405,6 +422,7 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
     const due = (questsEntity && questsEntity.attributes.due) || [];
     const entryId = this._entryId(questsEntity, goldEntity);
     const count = quests.length;
+    const qKeys = stableKeys(quests);
 
     let addRow = "";
     if (!this._config.hide_add_task) {
@@ -434,10 +452,10 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 ${VINES[i % 3]}
                 <div class="qr-n">${roman}</div>
                 <div style="flex:1;min-width:0;">
-                  <input id="questText-${i}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+                  <input id="questText-${qKeys[i]}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
                   <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                    <input id="questDue-${i}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${dueLocal}" />
-                    <input id="questReward-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
+                    <input id="questDue-${qKeys[i]}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${dueLocal}" />
+                    <input id="questReward-${qKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
                     <button class="qr-btn qr-quest-save" data-idx="${i}">💾</button>
                     <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-btn-sell qr-quest-del" data-idx="${i}">✕</button>
@@ -556,9 +574,9 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
         saveBtn.addEventListener("click", () => {
           const i = parseInt(saveBtn.dataset.idx, 10);
           const questText = quests[i];
-          const textEl = this.shadowRoot.getElementById(`questText-${i}`);
-          const rewardEl = this.shadowRoot.getElementById(`questReward-${i}`);
-          const dueEl = this.shadowRoot.getElementById(`questDue-${i}`);
+          const textEl = this.shadowRoot.getElementById(`questText-${qKeys[i]}`);
+          const rewardEl = this.shadowRoot.getElementById(`questReward-${qKeys[i]}`);
+          const dueEl = this.shadowRoot.getElementById(`questDue-${qKeys[i]}`);
           const newText = textEl.value.trim();
           const reward = Math.min(100, Math.max(1, parseInt(rewardEl.value, 10) || 1));
           if (!newText) return;
@@ -765,6 +783,7 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
     const entryId = this._entryId(shopEntity, goldEntity);
     const gold = goldEntity ? Math.round(parseFloat(goldEntity.state) || 0) : null;
     const items = (shopEntity && shopEntity.attributes.quests) || [];
+    const iKeys = stableKeys(items);
 
     const listRows = items
       .map((item, i) => {
@@ -776,12 +795,12 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
         return `
           <div class="qr-item" data-idx="${i}" style="cursor:default; align-items:flex-start;">
             ${VINES[i % 3]}
-            <input id="rowEmoji-${i}" class="qr-n qr-n-input" type="text" maxlength="8" value="${emoji.replace(/"/g, "&quot;")}" />
+            <input id="rowEmoji-${iKeys[i]}" class="qr-n qr-n-input" type="text" maxlength="8" value="${emoji.replace(/"/g, "&quot;")}" />
             <div style="flex:1;min-width:0;">
-              <input id="rowName-${i}" class="qr-add-input" type="text" value="${nameText.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+              <input id="rowName-${iKeys[i]}" class="qr-add-input" type="text" value="${nameText.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
               <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                ₡<input id="rowPrice-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
-                <input id="rowStock-${i}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
+                ₡<input id="rowPrice-${iKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
+                <input id="rowStock-${iKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
                 <button class="qr-btn qr-shopadmin-save" data-idx="${i}">💾</button>
                 <button class="qr-btn qr-btn-sell qr-shopadmin-del" data-idx="${i}">✕</button>
               </div>
@@ -875,10 +894,10 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
       saveBtn.addEventListener("click", () => {
         const i = parseInt(saveBtn.dataset.idx, 10);
         const itemText = items[i];
-        const emojiEl = this.shadowRoot.getElementById(`rowEmoji-${i}`);
-        const nameEl = this.shadowRoot.getElementById(`rowName-${i}`);
-        const priceEl = this.shadowRoot.getElementById(`rowPrice-${i}`);
-        const stockEl = this.shadowRoot.getElementById(`rowStock-${i}`);
+        const emojiEl = this.shadowRoot.getElementById(`rowEmoji-${iKeys[i]}`);
+        const nameEl = this.shadowRoot.getElementById(`rowName-${iKeys[i]}`);
+        const priceEl = this.shadowRoot.getElementById(`rowPrice-${iKeys[i]}`);
+        const stockEl = this.shadowRoot.getElementById(`rowStock-${iKeys[i]}`);
         const newEmoji = emojiEl.value.trim();
         const newName = nameEl.value.trim();
         const price = parseInt(priceEl.value, 10);
