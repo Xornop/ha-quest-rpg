@@ -227,6 +227,15 @@ const VINES = [
   '<svg style="position:absolute;top:0;right:0;width:90px;height:80px;pointer-events:none;" viewBox="0 0 90 80"><path d="M90 0 Q70 10 60 25 Q50 38 55 55" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M75 8 Q65 5 62 14" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M63 22 Q71 18 72 28" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="62" cy="13" rx="5" ry="3.5" fill="#4CAF50" transform="rotate(-30 62 13)"/><ellipse cx="71" cy="26" rx="5" ry="3" fill="#2D6A2D" transform="rotate(20 71 26)"/><ellipse cx="54" cy="54" rx="4" ry="2.5" fill="#3A8C3A" transform="rotate(10 54 54)" opacity="0.8"/></svg><svg style="position:absolute;bottom:0;left:0;width:70px;height:60px;pointer-events:none;" viewBox="0 0 70 60"><path d="M0 60 Q15 45 22 30 Q28 18 20 5" fill="none" stroke="#2D6A2D" stroke-width="1.8" stroke-linecap="round"/><path d="M10 50 Q18 52 17 42" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><path d="M20 32 Q12 28 11 38" fill="none" stroke="#2D6A2D" stroke-width="1.2" stroke-linecap="round"/><ellipse cx="16" cy="43" rx="4.5" ry="3" fill="#3A8C3A" transform="rotate(15 16 43)"/><ellipse cx="12" cy="30" rx="4" ry="3" fill="#4CAF50" transform="rotate(-20 12 30)" opacity="0.9"/><ellipse cx="21" cy="7" rx="3.5" ry="2.5" fill="#2D6A2D" transform="rotate(5 21 7)"/></svg>',
 ];
 
+// Escape text from entities (quests, shop items, vouchers) before it goes into innerHTML.
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 function priceOf(text) {
   const m = text.match(/₡(\d+)/);
   return m ? parseInt(m[1], 10) : 0;
@@ -452,14 +461,14 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 ${VINES[i % 3]}
                 <div class="qr-n">${roman}</div>
                 <div style="flex:1;min-width:0;">
-                  <input id="questText-${qKeys[i]}" class="qr-add-input" type="text" value="${short.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+                  <input id="questText-${qKeys[i]}" class="qr-add-input" type="text" value="${esc(short)}" style="width:100%; box-sizing:border-box;" />
                   <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                    <input id="questDue-${qKeys[i]}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${dueLocal}" />
+                    <input id="questDue-${qKeys[i]}" class="qr-add-input qr-quest-due-input" type="datetime-local" value="${esc(dueLocal)}" />
                     <input id="questReward-${qKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" max="100" value="${reward}" />
                     <button class="qr-btn qr-quest-save" data-idx="${i}">💾</button>
                     <button class="qr-btn qr-quest-complete" data-idx="${i}">✅</button>
                     <button class="qr-btn qr-btn-sell qr-quest-del" data-idx="${i}">✕</button>
-                    ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
+                    ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${esc(d.timer_text)}</span>` : ""}
                   </div>
                 </div>
               </div>`;
@@ -480,11 +489,11 @@ class QuestRpgQuestsCard extends QuestRpgBaseCard {
                 ${VINES[i % 3]}
                 <div class="qr-n">${roman}</div>
                 <div style="flex:1;min-width:0;">
-                  <div class="qr-t">${icons.questItem} ${short}</div>
+                  <div class="qr-t">${icons.questItem} ${esc(short)}</div>
                   <div class="qr-s">
                     ${icons.questAction} Tap to complete
                     <span class="qr-b">${reward > 0 ? `${reward} ₡` : ""}</span>
-                    ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${d.timer_text}</span>` : ""}
+                    ${d.has_due ? `<span class="qr-timer ${d.urgent || d.expired ? "urgent" : ""}">${esc(d.timer_text)}</span>` : ""}
                   </div>
                 </div>
               </div>`;
@@ -741,9 +750,9 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
             return `
               <div class="qr-item ${e.disabled ? "disabled" : ""}" data-idx="${i}">
                 ${VINES[i % 3]}
-                <div class="qr-n">${firstWord(naam)}</div>
+                <div class="qr-n">${esc(firstWord(naam))}</div>
                 <div style="flex:1;min-width:0;">
-                  <div class="qr-t">${restWords(naam)}</div>
+                  <div class="qr-t">${esc(restWords(naam))}</div>
                   <div class="qr-s">🪙 ${e.prijs} ₡ ${stockLabel}</div>
                 </div>
                 ${buyBadge}
@@ -795,9 +804,9 @@ class QuestRpgShopCard extends QuestRpgBaseCard {
         return `
           <div class="qr-item" data-idx="${i}" style="cursor:default; align-items:flex-start;">
             ${VINES[i % 3]}
-            <input id="rowEmoji-${iKeys[i]}" class="qr-n qr-n-input" type="text" maxlength="8" value="${emoji.replace(/"/g, "&quot;")}" />
+            <input id="rowEmoji-${iKeys[i]}" class="qr-n qr-n-input" type="text" maxlength="8" value="${esc(emoji)}" />
             <div style="flex:1;min-width:0;">
-              <input id="rowName-${iKeys[i]}" class="qr-add-input" type="text" value="${nameText.replace(/"/g, "&quot;")}" style="width:100%; box-sizing:border-box;" />
+              <input id="rowName-${iKeys[i]}" class="qr-add-input" type="text" value="${esc(nameText)}" style="width:100%; box-sizing:border-box;" />
               <div class="qr-s" style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
                 ₡<input id="rowPrice-${iKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="1" value="${prijs}" />
                 <input id="rowStock-${iKeys[i]}" class="qr-add-input qr-shopadmin-rownum" type="number" min="0" placeholder="∞" value="${stock === null ? "" : stock}" />
@@ -986,9 +995,9 @@ class QuestRpgVouchersCard extends QuestRpgBaseCard {
             const sellAmount = isAdmin ? waarde : Math.floor(waarde / 2);
             return `
               <div class="qr-item" style="cursor:default;" data-idx="${i}">
-                <div class="qr-n">${firstWord(naam)}</div>
+                <div class="qr-n">${esc(firstWord(naam))}</div>
                 <div style="flex:1;min-width:0;">
-                  <div class="qr-t">${restWords(naam)}</div>
+                  <div class="qr-t">${esc(restWords(naam))}</div>
                   <div class="qr-s">Value: 🪙 ${waarde} ₡</div>
                 </div>
                 ${isAdmin ? `<button class="qr-btn" data-action="redeem" data-idx="${i}">✅ Redeem</button>` : ""}
@@ -1072,7 +1081,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
     const windowOpen = isWithinWindow(windowStart, windowEnd, new Date());
     const subText = windowOpen
       ? `✦ ${spinsToday}/${this._maxSpins} spins used today ✦`
-      : `✦ Wheel opens at ${(windowStart || "").slice(0, 5)} ✦`;
+      : `✦ Wheel opens at ${esc((windowStart || "").slice(0, 5))} ✦`;
 
     if (this.shadowRoot.querySelector("#wheel") && this._built) {
       // already built - only refresh the readouts unless we're mid-spin
@@ -1128,7 +1137,7 @@ class QuestRpgWheelCard extends QuestRpgBaseCard {
               ${this._prizes
                 .map(
                   (p, i) =>
-                    `<text transform="rotate(${rotations[i]}) translate(65,0) rotate(90)" text-anchor="middle" class="wheel-text">${p} ₡</text>`
+                    `<text transform="rotate(${rotations[i]}) translate(65,0) rotate(90)" text-anchor="middle" class="wheel-text">${esc(p)} ₡</text>`
                 )
                 .join("")}
             </g>
